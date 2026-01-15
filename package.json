@@ -23,9 +23,9 @@
     "supabase:stop": "supabase stop",
     "supabase:migrate": "supabase db push",
     "supabase:types": "supabase gen types typescript --local > src/types/database.ts",
+    "db:migrate": "./scripts/migrate.sh",
     "db:seed": "tsx scripts/seed.ts",
     "db:reset": "supabase db reset",
-    "db:check": "./scripts/check-db.sh",
     "prepare": "husky"
   },
   "dependencies": {
@@ -43,6 +43,7 @@
     "@radix-ui/react-tooltip": "^1.1.6",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.47.0",
+    "@vercel/config": "^0.0.25",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",

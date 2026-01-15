@@ -152,11 +152,12 @@ src/
 ## Scripts
 
 ```bash
-pnpm dev       # Development server
-pnpm build     # Production build
-pnpm start     # Production server
-pnpm lint      # ESLint
-pnpm format    # Prettier
+pnpm dev        # Development server
+pnpm build      # Production build
+pnpm start      # Production server
+pnpm check      # Biome lint + format
+pnpm typecheck  # TypeScript check
+pnpm db:migrate # Run Supabase migrations
 ```
 
 ## Deployment
@@ -164,12 +165,16 @@ pnpm format    # Prettier
 ### Vercel (recommended)
 
 1. Connect repo to Vercel
-2. Set environment variables
-3. Deploy
+2. Set environment variables:
+   - All vars from `.env.example`
+   - Add `SUPABASE_ACCESS_TOKEN` (from Supabase Dashboard > Account > Access Tokens)
+   - Add `SUPABASE_PROJECT_REF` (from your Supabase project URL)
+3. Deploy - migrations run automatically via `vercel.ts`
 
 ### Other platforms
 
 ```bash
+pnpm db:migrate  # Run migrations first
 pnpm build
 pnpm start
 ```
