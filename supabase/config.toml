@@ -1,0 +1,11 @@
+# Supabase CLI config
+# Minimal config for remote migrations
+
+[api]
+enabled = false
+
+[db]
+major_version = 15
+
+[studio]
+enabled = false
