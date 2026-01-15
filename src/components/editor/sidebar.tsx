@@ -4,7 +4,6 @@ import type Konva from 'konva'
 import { Copy, Plus, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useRef } from 'react'
 
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { FORMAT_PRESETS, useCanvasStore } from '@/stores/canvas-store'
 import { type CanvasElement, type Slide, useSlidesStore } from '@/stores/slides-store'
@@ -24,7 +23,7 @@ function SlidePreview({ slide, slideIndex, isActive, onClick }: SlidePreviewProp
 
   const preset = FORMAT_PRESETS[format]
   const aspectRatio = preset.width / preset.height
-  const previewWidth = 160
+  const previewWidth = 80
   const previewHeight = previewWidth / aspectRatio
   const scale = previewWidth / preset.width
 
@@ -100,39 +99,42 @@ function SlidePreview({ slide, slideIndex, isActive, onClick }: SlidePreviewProp
   }
 
   return (
-    <div className="group relative">
+    <div className="group relative flex items-center gap-2">
+      {/* Slide number */}
+      <span className="w-4 text-center text-[10px] font-medium text-gray-400">
+        {slideIndex + 1}
+      </span>
+
+      {/* Thumbnail */}
       <button
         onClick={onClick}
         className={cn(
-          'relative w-full overflow-hidden rounded-md border-2 transition-colors',
+          'relative flex-1 overflow-hidden rounded transition-all',
           isActive
-            ? 'border-blue-500 ring-2 ring-blue-200'
-            : 'border-gray-200 hover:border-gray-300'
+            ? 'ring-2 ring-blue-500 ring-offset-1'
+            : 'ring-1 ring-gray-200 hover:ring-gray-300'
         )}
         style={{ aspectRatio: `${aspectRatio}` }}
       >
         <div ref={containerRef} className="h-full w-full" />
-        <span className="absolute bottom-1 left-1 rounded bg-black/50 px-1.5 py-0.5 text-xs text-white">
-          {slideIndex + 1}
-        </span>
       </button>
 
-      {/* Slide actions */}
-      <div className="absolute top-1 -right-1 flex flex-col gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+      {/* Actions on hover */}
+      <div className="absolute -right-1 top-1/2 flex -translate-y-1/2 flex-col gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
         <button
           onClick={handleDuplicate}
-          className="rounded bg-white p-1 shadow hover:bg-gray-100"
-          title="Duplicate slide"
+          className="rounded bg-white/90 p-1 shadow-sm backdrop-blur hover:bg-white"
+          title="Duplicate"
         >
-          <Copy className="h-3 w-3" />
+          <Copy className="h-2.5 w-2.5 text-gray-600" />
         </button>
         {slides.length > 1 && (
           <button
             onClick={handleDelete}
-            className="rounded bg-white p-1 shadow hover:bg-red-50 hover:text-red-600"
-            title="Delete slide"
+            className="rounded bg-white/90 p-1 shadow-sm backdrop-blur hover:bg-red-50"
+            title="Delete"
           >
-            <Trash2 className="h-3 w-3" />
+            <Trash2 className="h-2.5 w-2.5 text-gray-600 hover:text-red-600" />
           </button>
         )}
       </div>
@@ -229,12 +231,21 @@ export function EditorSidebar() {
   const { slides, currentSlideIndex, setCurrentSlide, addSlide } = useSlidesStore()
 
   return (
-    <aside className="flex max-h-[calc(100vh-12rem)] w-52 flex-col rounded-lg border bg-white shadow-lg">
-      <div className="shrink-0 border-b p-3">
-        <h3 className="text-sm font-medium text-gray-900">Slides ({slides.length})</h3>
+    <aside className="flex max-h-[calc(100vh-10rem)] w-32 flex-col rounded-lg border bg-white/95 shadow-lg backdrop-blur">
+      {/* Header with count and add button */}
+      <div className="flex shrink-0 items-center justify-between border-b px-2 py-1.5">
+        <span className="text-[10px] font-medium text-gray-500">{slides.length} Slides</span>
+        <button
+          onClick={addSlide}
+          className="rounded p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+          title="Add Slide"
+        >
+          <Plus className="h-3.5 w-3.5" />
+        </button>
       </div>
 
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
+      {/* Slides list */}
+      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-2">
         {slides.map((slide, index) => (
           <SlidePreview
             key={slide.id}
@@ -244,13 +255,6 @@ export function EditorSidebar() {
             onClick={() => setCurrentSlide(index)}
           />
         ))}
-      </div>
-
-      <div className="shrink-0 border-t p-3">
-        <Button variant="outline" size="sm" className="w-full" onClick={addSlide}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Slide
-        </Button>
       </div>
     </aside>
   )

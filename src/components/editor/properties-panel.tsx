@@ -3,7 +3,6 @@
 import { ArrowDownToLine, ArrowUpToLine, Link, Link2Off, RotateCcw } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
@@ -82,106 +81,102 @@ export function PropertiesPanel() {
   if (!selectedElement) return null
 
   return (
-    <aside className="max-h-[calc(100vh-12rem)] w-56 flex-shrink-0 overflow-y-auto rounded-lg border bg-white p-4 shadow-lg">
-      <h3 className="mb-4 text-sm font-medium text-gray-900">Properties</h3>
+    <aside className="max-h-[calc(100vh-10rem)] w-48 flex-shrink-0 overflow-y-auto rounded-lg border bg-white/95 p-3 shadow-lg backdrop-blur">
+      <h3 className="mb-3 text-xs font-medium text-gray-500">Properties</h3>
 
       {/* Position */}
-      <div className="mb-4">
-        <Label className="mb-2 block text-xs text-gray-500">Position</Label>
-        <div className="grid grid-cols-2 gap-2">
+      <div className="mb-3">
+        <Label className="mb-1.5 block text-[10px] font-medium text-gray-400">Position</Label>
+        <div className="grid grid-cols-2 gap-1.5">
           <div>
-            <span className="mb-1 block text-xs text-gray-400">X</span>
+            <span className="mb-0.5 block text-[10px] text-gray-400">X</span>
             <Input
               type="number"
               value={Math.round(selectedElement.x)}
               onChange={(e) => handleUpdate({ x: Number(e.target.value) })}
-              className="h-8 text-sm"
+              className="h-7 text-xs"
             />
           </div>
           <div>
-            <span className="mb-1 block text-xs text-gray-400">Y</span>
+            <span className="mb-0.5 block text-[10px] text-gray-400">Y</span>
             <Input
               type="number"
               value={Math.round(selectedElement.y)}
               onChange={(e) => handleUpdate({ y: Number(e.target.value) })}
-              className="h-8 text-sm"
+              className="h-7 text-xs"
             />
           </div>
         </div>
       </div>
 
       {/* Size */}
-      <div className="mb-4">
-        <div className="mb-2 flex items-center justify-between">
-          <Label className="text-xs text-gray-500">Size</Label>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
+      <div className="mb-3">
+        <div className="mb-1.5 flex items-center justify-between">
+          <Label className="text-[10px] font-medium text-gray-400">Size</Label>
+          <button
+            className="rounded p-0.5 hover:bg-gray-100"
             onClick={() => setLockAspectRatio(!lockAspectRatio)}
             title={lockAspectRatio ? 'Unlock aspect ratio' : 'Lock aspect ratio'}
           >
             {lockAspectRatio ? (
-              <Link className="h-3 w-3" />
+              <Link className="h-3 w-3 text-blue-500" />
             ) : (
               <Link2Off className="h-3 w-3 text-gray-400" />
             )}
-          </Button>
+          </button>
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-1.5">
           <div>
-            <span className="mb-1 block text-xs text-gray-400">W</span>
+            <span className="mb-0.5 block text-[10px] text-gray-400">W</span>
             <Input
               type="number"
               value={Math.round(selectedElement.width)}
               onChange={(e) => handleWidthChange(Number(e.target.value))}
-              className="h-8 text-sm"
+              className="h-7 text-xs"
             />
           </div>
           <div>
-            <span className="mb-1 block text-xs text-gray-400">H</span>
+            <span className="mb-0.5 block text-[10px] text-gray-400">H</span>
             <Input
               type="number"
               value={Math.round(selectedElement.height)}
               onChange={(e) => handleHeightChange(Number(e.target.value))}
-              className="h-8 text-sm"
+              className="h-7 text-xs"
             />
           </div>
         </div>
       </div>
 
       {/* Rotation */}
-      <div className="mb-4">
-        <div className="mb-2 flex items-center justify-between">
-          <Label className="text-xs text-gray-500">Rotation</Label>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
+      <div className="mb-3">
+        <div className="mb-1.5 flex items-center justify-between">
+          <Label className="text-[10px] font-medium text-gray-400">Rotation</Label>
+          <button
+            className="rounded p-0.5 hover:bg-gray-100"
             onClick={handleResetRotation}
             title="Reset rotation"
           >
             <RotateCcw className="h-3 w-3 text-gray-400" />
-          </Button>
+          </button>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <Input
             type="number"
             value={Math.round(selectedElement.rotation)}
             onChange={(e) => handleUpdate({ rotation: Number(e.target.value) % 360 })}
-            className="h-8 flex-1 text-sm"
+            className="h-7 flex-1 text-xs"
             min={-360}
             max={360}
           />
-          <span className="text-xs text-gray-400">°</span>
+          <span className="text-[10px] text-gray-400">°</span>
         </div>
       </div>
 
       {/* Opacity */}
-      <div className="mb-4">
-        <div className="mb-2 flex items-center justify-between">
-          <Label className="text-xs text-gray-500">Opacity</Label>
-          <span className="text-xs text-gray-400">
+      <div className="mb-3">
+        <div className="mb-1.5 flex items-center justify-between">
+          <Label className="text-[10px] font-medium text-gray-400">Opacity</Label>
+          <span className="text-[10px] text-gray-400">
             {Math.round(selectedElement.opacity * 100)}%
           </span>
         </div>
@@ -197,28 +192,24 @@ export function PropertiesPanel() {
 
       {/* Layer controls */}
       <div>
-        <Label className="mb-2 block text-xs text-gray-500">Layer</Label>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1 text-xs"
+        <Label className="mb-1.5 block text-[10px] font-medium text-gray-400">Layer</Label>
+        <div className="flex gap-1">
+          <button
+            className="flex flex-1 items-center justify-center gap-1 rounded border py-1.5 text-[10px] text-gray-600 hover:bg-gray-50"
             onClick={handleBringToFront}
             title="Bring to front"
           >
-            <ArrowUpToLine className="mr-1 h-3 w-3" />
+            <ArrowUpToLine className="h-3 w-3" />
             Front
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1 text-xs"
+          </button>
+          <button
+            className="flex flex-1 items-center justify-center gap-1 rounded border py-1.5 text-[10px] text-gray-600 hover:bg-gray-50"
             onClick={handleSendToBack}
             title="Send to back"
           >
-            <ArrowDownToLine className="mr-1 h-3 w-3" />
+            <ArrowDownToLine className="h-3 w-3" />
             Back
-          </Button>
+          </button>
         </div>
       </div>
     </aside>
