@@ -1,9 +1,16 @@
 'use client'
 
 import type Konva from 'konva'
-import { Copy, Plus, Trash2 } from 'lucide-react'
-import { useCallback, useEffect, useRef } from 'react'
+import { ArrowDown, ArrowUp, Copy, GripVertical, Plus, Trash2 } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu'
 import { cn } from '@/lib/utils'
 import { FORMAT_PRESETS, useCanvasStore } from '@/stores/canvas-store'
 import { type CanvasElement, type Slide, useSlidesStore } from '@/stores/slides-store'
@@ -13,13 +20,28 @@ interface SlidePreviewProps {
   slideIndex: number
   isActive: boolean
   onClick: () => void
+  onDragStart: (index: number) => void
+  onDragOver: (index: number) => void
+  onDragEnd: () => void
+  isDragging: boolean
+  isDragOver: boolean
 }
 
-function SlidePreview({ slide, slideIndex, isActive, onClick }: SlidePreviewProps) {
+function SlidePreview({
+  slide,
+  slideIndex,
+  isActive,
+  onClick,
+  onDragStart,
+  onDragOver,
+  onDragEnd,
+  isDragging,
+  isDragOver,
+}: SlidePreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<Konva.Stage | null>(null)
   const { format } = useCanvasStore()
-  const { slides, duplicateSlide, deleteSlide } = useSlidesStore()
+  const { slides, duplicateSlide, deleteSlide, reorderSlides } = useSlidesStore()
 
   const preset = FORMAT_PRESETS[format]
   const aspectRatio = preset.width / preset.height
@@ -88,57 +110,105 @@ function SlidePreview({ slide, slideIndex, isActive, onClick }: SlidePreviewProp
     return () => clearInterval(interval)
   }, [isActive, renderPreview])
 
-  const handleDuplicate = (e: React.MouseEvent) => {
-    e.stopPropagation()
+  const handleDuplicate = () => {
     duplicateSlide(slideIndex)
   }
 
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    deleteSlide(slideIndex)
+  const handleDelete = () => {
+    if (slides.length > 1) {
+      deleteSlide(slideIndex)
+    }
+  }
+
+  const handleMoveUp = () => {
+    if (slideIndex > 0) {
+      reorderSlides(slideIndex, slideIndex - 1)
+    }
+  }
+
+  const handleMoveDown = () => {
+    if (slideIndex < slides.length - 1) {
+      reorderSlides(slideIndex, slideIndex + 1)
+    }
+  }
+
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', String(slideIndex))
+    onDragStart(slideIndex)
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    onDragOver(slideIndex)
   }
 
   return (
-    <div className="group relative flex items-center gap-2">
-      {/* Slide number */}
-      <span className="w-4 text-center text-[10px] font-medium text-gray-400">
-        {slideIndex + 1}
-      </span>
-
-      {/* Thumbnail */}
-      <button
-        onClick={onClick}
-        className={cn(
-          'relative flex-1 overflow-hidden rounded transition-all',
-          isActive
-            ? 'ring-2 ring-blue-500 ring-offset-1'
-            : 'ring-1 ring-gray-200 hover:ring-gray-300'
-        )}
-        style={{ aspectRatio: `${aspectRatio}` }}
-      >
-        <div ref={containerRef} className="h-full w-full" />
-      </button>
-
-      {/* Actions on hover */}
-      <div className="absolute -right-1 top-1/2 flex -translate-y-1/2 flex-col gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-        <button
-          onClick={handleDuplicate}
-          className="rounded bg-white/90 p-1 shadow-sm backdrop-blur hover:bg-white"
-          title="Duplicate"
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <div
+          className={cn(
+            'group relative flex items-center gap-1 rounded-md p-1 transition-all',
+            isDragging && 'opacity-50',
+            isDragOver && 'bg-blue-50 ring-2 ring-blue-300'
+          )}
+          draggable
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={onDragEnd}
         >
-          <Copy className="h-2.5 w-2.5 text-gray-600" />
-        </button>
-        {slides.length > 1 && (
+          {/* Drag handle */}
+          <div className="cursor-grab text-gray-300 opacity-0 transition-opacity group-hover:opacity-100 active:cursor-grabbing">
+            <GripVertical className="h-3 w-3" />
+          </div>
+
+          {/* Slide number */}
+          <span className="w-3 text-center text-[10px] font-medium text-gray-400">
+            {slideIndex + 1}
+          </span>
+
+          {/* Thumbnail */}
           <button
-            onClick={handleDelete}
-            className="rounded bg-white/90 p-1 shadow-sm backdrop-blur hover:bg-red-50"
-            title="Delete"
+            onClick={onClick}
+            className={cn(
+              'relative flex-1 overflow-hidden rounded transition-all',
+              isActive
+                ? 'ring-2 ring-blue-500 ring-offset-1'
+                : 'ring-1 ring-gray-200 hover:ring-gray-300'
+            )}
+            style={{ aspectRatio: `${aspectRatio}` }}
           >
-            <Trash2 className="h-2.5 w-2.5 text-gray-600 hover:text-red-600" />
+            <div ref={containerRef} className="h-full w-full" />
           </button>
-        )}
-      </div>
-    </div>
+        </div>
+      </ContextMenuTrigger>
+
+      <ContextMenuContent className="w-40">
+        <ContextMenuItem onClick={handleDuplicate}>
+          <Copy className="mr-2 h-3.5 w-3.5" />
+          Duplizieren
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem onClick={handleMoveUp} disabled={slideIndex === 0}>
+          <ArrowUp className="mr-2 h-3.5 w-3.5" />
+          Nach oben
+        </ContextMenuItem>
+        <ContextMenuItem onClick={handleMoveDown} disabled={slideIndex === slides.length - 1}>
+          <ArrowDown className="mr-2 h-3.5 w-3.5" />
+          Nach unten
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem
+          onClick={handleDelete}
+          disabled={slides.length <= 1}
+          className="text-red-600 focus:text-red-600"
+        >
+          <Trash2 className="mr-2 h-3.5 w-3.5" />
+          Löschen
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   )
 }
 
@@ -228,7 +298,29 @@ async function renderElement(layer: Konva.Layer, element: CanvasElement, scale: 
 }
 
 export function EditorSidebar() {
-  const { slides, currentSlideIndex, setCurrentSlide, addSlide } = useSlidesStore()
+  const { slides, currentSlideIndex, setCurrentSlide, addSlide, reorderSlides } = useSlidesStore()
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+
+  const handleDragStart = (index: number) => {
+    setDragIndex(index)
+  }
+
+  const handleDragOver = (index: number) => {
+    setDragOverIndex(index)
+  }
+
+  const handleDragEnd = () => {
+    if (dragIndex !== null && dragOverIndex !== null && dragIndex !== dragOverIndex) {
+      reorderSlides(dragIndex, dragOverIndex)
+      // Update current slide index if needed
+      if (currentSlideIndex === dragIndex) {
+        setCurrentSlide(dragOverIndex)
+      }
+    }
+    setDragIndex(null)
+    setDragOverIndex(null)
+  }
 
   return (
     <aside className="flex h-full w-32 flex-col rounded-lg border bg-white/95 shadow-lg backdrop-blur">
@@ -245,7 +337,7 @@ export function EditorSidebar() {
       </div>
 
       {/* Slides list */}
-      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-2">
+      <div className="min-h-0 flex-1 space-y-1 overflow-y-auto p-1">
         {slides.map((slide, index) => (
           <SlidePreview
             key={slide.id}
@@ -253,6 +345,11 @@ export function EditorSidebar() {
             slideIndex={index}
             isActive={index === currentSlideIndex}
             onClick={() => setCurrentSlide(index)}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
+            isDragging={dragIndex === index}
+            isDragOver={dragOverIndex === index && dragIndex !== index}
           />
         ))}
       </div>
