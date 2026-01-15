@@ -1,15 +1,242 @@
 'use client'
 
-import { ArrowDownToLine, ArrowUpToLine, Link, Link2Off, RotateCcw } from 'lucide-react'
+import {
+  AlignCenter,
+  AlignEndHorizontal,
+  AlignStartHorizontal,
+  ArrowDownToLine,
+  ArrowUpToLine,
+  Link,
+  Link2Off,
+  RotateCcw,
+} from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
+import { ColorButton } from '@/components/editor/color-picker'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
 import { useHistoryStore } from '@/stores/history-store'
 import { useProjectStore } from '@/stores/project-store'
 import { useSelectionStore } from '@/stores/selection-store'
-import { useSlidesStore } from '@/stores/slides-store'
+import { type FrameElement, type LayoutMode, useSlidesStore } from '@/stores/slides-store'
+
+// Frame-specific properties component
+interface FramePropertiesProps {
+  element: FrameElement
+  onUpdate: (updates: Record<string, number | string | boolean>) => void
+}
+
+function FrameProperties({ element, onUpdate }: FramePropertiesProps) {
+  const { updateFrameLayout } = useSlidesStore()
+
+  const handleLayoutChange = (layoutMode: LayoutMode) => {
+    onUpdate({ layoutMode })
+    // Trigger layout recalculation
+    setTimeout(() => updateFrameLayout(element.id), 0)
+  }
+
+  const handleLayoutUpdate = (updates: Record<string, number | string | boolean>) => {
+    onUpdate(updates)
+    if (element.layoutMode !== 'none') {
+      setTimeout(() => updateFrameLayout(element.id), 0)
+    }
+  }
+
+  return (
+    <div className="mb-3 border-t pt-3">
+      <Label className="mb-2 block text-[10px] font-medium text-gray-400">Auto-Layout</Label>
+
+      {/* Layout Mode */}
+      <div className="mb-2">
+        <div className="flex gap-1">
+          <button
+            onClick={() => handleLayoutChange('none')}
+            className={`flex-1 rounded border py-1 text-[10px] ${
+              element.layoutMode === 'none'
+                ? 'border-blue-500 bg-blue-50 text-blue-600'
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            Keine
+          </button>
+          <button
+            onClick={() => handleLayoutChange('horizontal')}
+            className={`flex-1 rounded border py-1 text-[10px] ${
+              element.layoutMode === 'horizontal'
+                ? 'border-blue-500 bg-blue-50 text-blue-600'
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            →
+          </button>
+          <button
+            onClick={() => handleLayoutChange('vertical')}
+            className={`flex-1 rounded border py-1 text-[10px] ${
+              element.layoutMode === 'vertical'
+                ? 'border-blue-500 bg-blue-50 text-blue-600'
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            ↓
+          </button>
+        </div>
+      </div>
+
+      {element.layoutMode !== 'none' && (
+        <>
+          {/* Wrap */}
+          <div className="mb-2">
+            <Label className="mb-1 block text-[10px] text-gray-400">Wrap</Label>
+            <div className="flex gap-1">
+              <button
+                onClick={() => handleLayoutUpdate({ layoutWrap: 'nowrap' })}
+                className={`flex-1 rounded border py-1 text-[10px] ${
+                  element.layoutWrap === 'nowrap'
+                    ? 'border-blue-500 bg-blue-50 text-blue-600'
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                Nein
+              </button>
+              <button
+                onClick={() => handleLayoutUpdate({ layoutWrap: 'wrap' })}
+                className={`flex-1 rounded border py-1 text-[10px] ${
+                  element.layoutWrap === 'wrap'
+                    ? 'border-blue-500 bg-blue-50 text-blue-600'
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                Ja
+              </button>
+            </div>
+          </div>
+
+          {/* Gap */}
+          <div className="mb-2">
+            <Label className="mb-1 block text-[10px] text-gray-400">Gap</Label>
+            <Input
+              type="number"
+              value={element.gap}
+              onChange={(e) => handleLayoutUpdate({ gap: Number(e.target.value) })}
+              className="h-7 text-xs"
+              min={0}
+            />
+          </div>
+
+          {/* Padding */}
+          <div className="mb-2">
+            <Label className="mb-1 block text-[10px] text-gray-400">Padding</Label>
+            <div className="grid grid-cols-4 gap-1">
+              <Input
+                type="number"
+                value={element.paddingTop}
+                onChange={(e) => handleLayoutUpdate({ paddingTop: Number(e.target.value) })}
+                className="h-7 text-xs"
+                min={0}
+                placeholder="↑"
+                title="Oben"
+              />
+              <Input
+                type="number"
+                value={element.paddingRight}
+                onChange={(e) => handleLayoutUpdate({ paddingRight: Number(e.target.value) })}
+                className="h-7 text-xs"
+                min={0}
+                placeholder="→"
+                title="Rechts"
+              />
+              <Input
+                type="number"
+                value={element.paddingBottom}
+                onChange={(e) => handleLayoutUpdate({ paddingBottom: Number(e.target.value) })}
+                className="h-7 text-xs"
+                min={0}
+                placeholder="↓"
+                title="Unten"
+              />
+              <Input
+                type="number"
+                value={element.paddingLeft}
+                onChange={(e) => handleLayoutUpdate({ paddingLeft: Number(e.target.value) })}
+                className="h-7 text-xs"
+                min={0}
+                placeholder="←"
+                title="Links"
+              />
+            </div>
+          </div>
+
+          {/* Alignment */}
+          <div className="mb-2">
+            <Label className="mb-1 block text-[10px] text-gray-400">Ausrichtung</Label>
+            <div className="flex gap-1">
+              <button
+                onClick={() => handleLayoutUpdate({ alignItems: 'start' })}
+                className={`flex-1 rounded border py-1.5 ${
+                  element.alignItems === 'start'
+                    ? 'border-blue-500 bg-blue-50 text-blue-600'
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+                title="Start"
+              >
+                <AlignStartHorizontal className="mx-auto h-3 w-3" />
+              </button>
+              <button
+                onClick={() => handleLayoutUpdate({ alignItems: 'center' })}
+                className={`flex-1 rounded border py-1.5 ${
+                  element.alignItems === 'center'
+                    ? 'border-blue-500 bg-blue-50 text-blue-600'
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+                title="Center"
+              >
+                <AlignCenter className="mx-auto h-3 w-3" />
+              </button>
+              <button
+                onClick={() => handleLayoutUpdate({ alignItems: 'end' })}
+                className={`flex-1 rounded border py-1.5 ${
+                  element.alignItems === 'end'
+                    ? 'border-blue-500 bg-blue-50 text-blue-600'
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+                title="End"
+              >
+                <AlignEndHorizontal className="mx-auto h-3 w-3" />
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Frame Visual Properties */}
+      <div className="mt-3 border-t pt-3">
+        <Label className="mb-2 block text-[10px] font-medium text-gray-400">Frame Style</Label>
+
+        {/* Fill Color */}
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-[10px] text-gray-400">Hintergrund</span>
+          <ColorButton
+            value={element.fill || 'transparent'}
+            onChange={(color) => onUpdate({ fill: color })}
+          />
+        </div>
+
+        {/* Corner Radius */}
+        <div className="mb-2">
+          <Label className="mb-1 block text-[10px] text-gray-400">Eckenradius</Label>
+          <Input
+            type="number"
+            value={element.cornerRadius || 0}
+            onChange={(e) => onUpdate({ cornerRadius: Number(e.target.value) })}
+            className="h-7 text-xs"
+            min={0}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export function PropertiesPanel() {
   const { selectedIds } = useSelectionStore()
@@ -189,6 +416,11 @@ export function PropertiesPanel() {
           className="w-full"
         />
       </div>
+
+      {/* Frame Properties */}
+      {selectedElement.type === 'frame' && (
+        <FrameProperties element={selectedElement as FrameElement} onUpdate={handleUpdate} />
+      )}
 
       {/* Layer controls */}
       <div>

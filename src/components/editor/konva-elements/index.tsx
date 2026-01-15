@@ -4,6 +4,8 @@ import type { KonvaEventObject } from 'konva/lib/Node'
 
 import type { CanvasElement } from '@/stores/slides-store'
 
+import { FrameElement } from './frame-element'
+import { GroupElement } from './group-element'
 import { IconElement } from './icon-element'
 import { ImageElement } from './image-element'
 import { ArrowElement, LineElement } from './line-element'
@@ -61,13 +63,16 @@ export function ElementRenderer({
     case 'icon':
       return <IconElement element={element} {...commonProps} />
     case 'group':
-      // TODO: Implement group rendering
-      return null
+      return <GroupElement element={element} {...commonProps} />
+    case 'frame':
+      return <FrameElement element={element} {...commonProps} />
     default:
       return null
   }
 }
 
+export { FrameElement } from './frame-element'
+export { GroupElement } from './group-element'
 export { IconElement } from './icon-element'
 export { ImageElement } from './image-element'
 export { ArrowElement, LineElement } from './line-element'

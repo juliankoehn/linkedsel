@@ -15,6 +15,13 @@ export type ElementType =
   | 'polygon'
   | 'icon'
   | 'group'
+  | 'frame'
+
+// Auto-layout types
+export type LayoutMode = 'none' | 'horizontal' | 'vertical'
+export type LayoutWrap = 'nowrap' | 'wrap'
+export type AlignItems = 'start' | 'center' | 'end' | 'stretch'
+export type JustifyContent = 'start' | 'center' | 'end' | 'space-between'
 
 export interface BaseElement {
   id: string
@@ -139,6 +146,36 @@ export interface GroupElement extends BaseElement {
   children: CanvasElement[]
 }
 
+export interface FrameElement extends BaseElement {
+  type: 'frame'
+  children: CanvasElement[]
+
+  // Auto-Layout Properties
+  layoutMode: LayoutMode
+  layoutWrap: LayoutWrap
+
+  // Spacing
+  paddingTop: number
+  paddingRight: number
+  paddingBottom: number
+  paddingLeft: number
+  gap: number
+
+  // Alignment (like Flexbox)
+  alignItems: AlignItems
+  justifyContent: JustifyContent
+
+  // Sizing behavior
+  autoWidth: boolean
+  autoHeight: boolean
+
+  // Visual
+  fill?: string
+  stroke?: string
+  strokeWidth?: number
+  cornerRadius?: number
+}
+
 export type CanvasElement =
   | TextElement
   | ImageElement
@@ -151,6 +188,7 @@ export type CanvasElement =
   | PolygonElement
   | IconElement
   | GroupElement
+  | FrameElement
 
 export interface Slide {
   id: string
@@ -195,10 +233,17 @@ interface SlidesActions {
   ) => void
   distributeElements: (ids: string[], direction: 'horizontal' | 'vertical') => void
 
+  // Grouping & Frames
+  groupElements: (ids: string[]) => string | null
+  ungroupElement: (id: string) => void
+  createFrameFromElements: (ids: string[]) => string | null
+  updateFrameLayout: (id: string) => void
+
   // Helpers
   getElementById: (id: string) => CanvasElement | undefined
   getCurrentSlide: () => Slide | undefined
   setSlides: (slides: Slide[]) => void
+  getElementsRecursive: (elements: CanvasElement[]) => CanvasElement[]
 
   reset: () => void
 }
@@ -555,6 +600,179 @@ export const useSlidesStore = create<SlidesStore>()(
         })
       },
 
+      // Grouping & Frames
+      groupElements: (ids) => {
+        if (ids.length < 2) return null
+
+        const { slides, currentSlideIndex } = get()
+        const currentSlide = slides[currentSlideIndex]
+        if (!currentSlide) return null
+
+        const elementsToGroup = currentSlide.elements.filter((el) => ids.includes(el.id))
+        if (elementsToGroup.length < 2) return null
+
+        const group = createGroupElement(elementsToGroup)
+
+        set((state) => {
+          const newSlides = [...state.slides]
+          const slide = newSlides[state.currentSlideIndex]
+          if (slide) {
+            // Remove grouped elements and add the group
+            slide.elements = [...slide.elements.filter((el) => !ids.includes(el.id)), group]
+          }
+          return { slides: newSlides }
+        })
+
+        return group.id
+      },
+
+      ungroupElement: (id) => {
+        set((state) => {
+          const newSlides = [...state.slides]
+          const currentSlide = newSlides[state.currentSlideIndex]
+          if (!currentSlide) return { slides: newSlides }
+
+          const element = currentSlide.elements.find((el) => el.id === id)
+          if (!element || (element.type !== 'group' && element.type !== 'frame')) {
+            return { slides: newSlides }
+          }
+
+          const groupOrFrame = element as GroupElement | FrameElement
+          // Convert children back to absolute positions
+          const unpackedChildren = groupOrFrame.children.map((child) => ({
+            ...child,
+            x: child.x + groupOrFrame.x,
+            y: child.y + groupOrFrame.y,
+          }))
+
+          // Remove group/frame and add children
+          const elementIndex = currentSlide.elements.findIndex((el) => el.id === id)
+          currentSlide.elements = [
+            ...currentSlide.elements.slice(0, elementIndex),
+            ...unpackedChildren,
+            ...currentSlide.elements.slice(elementIndex + 1),
+          ]
+
+          return { slides: newSlides }
+        })
+      },
+
+      createFrameFromElements: (ids) => {
+        if (ids.length < 1) return null
+
+        const { slides, currentSlideIndex } = get()
+        const currentSlide = slides[currentSlideIndex]
+        if (!currentSlide) return null
+
+        const elementsToFrame = currentSlide.elements.filter((el) => ids.includes(el.id))
+        if (elementsToFrame.length === 0) return null
+
+        const frame = createFrameElement(elementsToFrame)
+
+        set((state) => {
+          const newSlides = [...state.slides]
+          const slide = newSlides[state.currentSlideIndex]
+          if (slide) {
+            // Remove framed elements and add the frame
+            slide.elements = [...slide.elements.filter((el) => !ids.includes(el.id)), frame]
+          }
+          return { slides: newSlides }
+        })
+
+        return frame.id
+      },
+
+      updateFrameLayout: (id) => {
+        set((state) => {
+          const newSlides = [...state.slides]
+          const currentSlide = newSlides[state.currentSlideIndex]
+          if (!currentSlide) return { slides: newSlides }
+
+          const frameIndex = currentSlide.elements.findIndex((el) => el.id === id)
+          const frame = currentSlide.elements[frameIndex]
+          if (!frame || frame.type !== 'frame') return { slides: newSlides }
+
+          const typedFrame = frame as FrameElement
+          if (typedFrame.layoutMode === 'none') return { slides: newSlides }
+
+          // Calculate new positions based on layout mode
+          const {
+            paddingTop,
+            paddingRight,
+            paddingBottom,
+            paddingLeft,
+            gap,
+            layoutMode,
+            layoutWrap,
+            alignItems,
+          } = typedFrame
+          const children = [...typedFrame.children]
+
+          const contentWidth = typedFrame.width - paddingLeft - paddingRight
+          // contentHeight will be used for justify-content in future
+          void (typedFrame.height - paddingTop - paddingBottom)
+
+          if (layoutMode === 'horizontal') {
+            let currentX = paddingLeft
+            let currentY = paddingTop
+            let rowHeight = 0
+            let rowStartIndex = 0
+
+            for (let i = 0; i < children.length; i++) {
+              const child = children[i]!
+
+              // Check for wrap
+              if (
+                layoutWrap === 'wrap' &&
+                currentX + child.width > typedFrame.width - paddingRight &&
+                i > rowStartIndex
+              ) {
+                // Apply alignment to completed row
+                currentY += rowHeight + gap
+                currentX = paddingLeft
+                rowHeight = 0
+                rowStartIndex = i
+              }
+
+              child.x = currentX
+              child.y = currentY
+
+              // Vertical alignment within row
+              if (alignItems === 'center') {
+                child.y = currentY + (rowHeight - child.height) / 2
+              } else if (alignItems === 'end') {
+                child.y = currentY + rowHeight - child.height
+              }
+
+              currentX += child.width + gap
+              rowHeight = Math.max(rowHeight, child.height)
+            }
+          } else if (layoutMode === 'vertical') {
+            const currentX = paddingLeft
+            let currentY = paddingTop
+
+            for (const child of children) {
+              child.x = currentX
+              child.y = currentY
+
+              // Horizontal alignment
+              if (alignItems === 'center') {
+                child.x = paddingLeft + (contentWidth - child.width) / 2
+              } else if (alignItems === 'end') {
+                child.x = typedFrame.width - paddingRight - child.width
+              } else if (alignItems === 'stretch') {
+                child.width = contentWidth
+              }
+
+              currentY += child.height + gap
+            }
+          }
+
+          currentSlide.elements[frameIndex] = { ...typedFrame, children }
+          return { slides: newSlides }
+        })
+      },
+
       // Helpers
       getElementById: (id) => {
         const { slides, currentSlideIndex } = get()
@@ -569,6 +787,18 @@ export const useSlidesStore = create<SlidesStore>()(
 
       setSlides: (slides) => {
         set({ slides, currentSlideIndex: 0 })
+      },
+
+      getElementsRecursive: (elements) => {
+        const result: CanvasElement[] = []
+        for (const el of elements) {
+          result.push(el)
+          if (el.type === 'group' || el.type === 'frame') {
+            const container = el as GroupElement | FrameElement
+            result.push(...get().getElementsRecursive(container.children))
+          }
+        }
+        return result
       },
 
       reset: () => set(initialState),
@@ -760,3 +990,102 @@ export const createIconElement = (
   fill: '#000000',
   ...overrides,
 })
+
+export const createGroupElement = (
+  children: CanvasElement[],
+  overrides: Partial<GroupElement> = {}
+): GroupElement => {
+  // Calculate bounding box of children
+  const bounds = calculateBounds(children)
+  return {
+    id: nanoid(),
+    type: 'group',
+    x: bounds.x,
+    y: bounds.y,
+    width: bounds.width,
+    height: bounds.height,
+    rotation: 0,
+    opacity: 1,
+    visible: true,
+    locked: false,
+    children: children.map((child) => ({
+      ...child,
+      x: child.x - bounds.x,
+      y: child.y - bounds.y,
+    })),
+    ...overrides,
+  }
+}
+
+export const createFrameElement = (
+  children: CanvasElement[] = [],
+  overrides: Partial<FrameElement> = {}
+): FrameElement => {
+  // Calculate bounding box of children if any
+  const bounds =
+    children.length > 0 ? calculateBounds(children) : { x: 100, y: 100, width: 200, height: 200 }
+  return {
+    id: nanoid(),
+    type: 'frame',
+    x: bounds.x,
+    y: bounds.y,
+    width: bounds.width,
+    height: bounds.height,
+    rotation: 0,
+    opacity: 1,
+    visible: true,
+    locked: false,
+    children: children.map((child) => ({
+      ...child,
+      x: child.x - bounds.x,
+      y: child.y - bounds.y,
+    })),
+    // Auto-layout defaults
+    layoutMode: 'none',
+    layoutWrap: 'nowrap',
+    paddingTop: 0,
+    paddingRight: 0,
+    paddingBottom: 0,
+    paddingLeft: 0,
+    gap: 0,
+    alignItems: 'start',
+    justifyContent: 'start',
+    autoWidth: false,
+    autoHeight: false,
+    // Visual defaults
+    fill: 'transparent',
+    cornerRadius: 0,
+    ...overrides,
+  }
+}
+
+// Helper to calculate bounding box of elements
+function calculateBounds(elements: CanvasElement[]): {
+  x: number
+  y: number
+  width: number
+  height: number
+} {
+  if (elements.length === 0) {
+    return { x: 0, y: 0, width: 0, height: 0 }
+  }
+
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+
+  for (const el of elements) {
+    minX = Math.min(minX, el.x)
+    minY = Math.min(minY, el.y)
+    maxX = Math.max(maxX, el.x + el.width)
+    maxY = Math.max(maxY, el.y + el.height)
+  }
+
+  return {
+    x: minX,
+    y: minY,
+    width: maxX - minX,
+    height: maxY - minY,
+  }
+}

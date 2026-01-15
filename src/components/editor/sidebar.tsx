@@ -4,6 +4,7 @@ import type Konva from 'konva'
 import { ArrowDown, ArrowUp, Copy, GripVertical, Plus, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { LayerPanel } from '@/components/editor/layer-panel'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -341,35 +342,43 @@ export function EditorSidebar() {
   }
 
   return (
-    <aside className="flex h-full w-32 flex-col rounded-lg border bg-white/95 shadow-lg backdrop-blur">
-      {/* Header with count and add button */}
-      <div className="flex shrink-0 items-center justify-between border-b px-2 py-1.5">
-        <span className="text-[10px] font-medium text-gray-500">{slides.length} Slides</span>
-        <button
-          onClick={addSlide}
-          className="rounded p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
-          title="Add Slide"
-        >
-          <Plus className="h-3.5 w-3.5" />
-        </button>
+    <aside className="flex h-full w-44 flex-col gap-2">
+      {/* Slides Panel */}
+      <div className="flex flex-col rounded-lg border bg-white/95 shadow-lg backdrop-blur">
+        {/* Header with count and add button */}
+        <div className="flex shrink-0 items-center justify-between border-b px-2 py-1.5">
+          <span className="text-[10px] font-medium text-gray-500">{slides.length} Slides</span>
+          <button
+            onClick={addSlide}
+            className="rounded p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+            title="Add Slide"
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        {/* Slides list */}
+        <div className="max-h-48 space-y-1 overflow-y-auto p-1">
+          {slides.map((slide, index) => (
+            <SlidePreview
+              key={slide.id}
+              slide={slide}
+              slideIndex={index}
+              isActive={index === currentSlideIndex}
+              onClick={() => setCurrentSlide(index)}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDragEnd={handleDragEnd}
+              isDragging={dragIndex === index}
+              isDragOver={dragOverIndex === index && dragIndex !== index}
+            />
+          ))}
+        </div>
       </div>
 
-      {/* Slides list */}
-      <div className="min-h-0 flex-1 space-y-1 overflow-y-auto p-1">
-        {slides.map((slide, index) => (
-          <SlidePreview
-            key={slide.id}
-            slide={slide}
-            slideIndex={index}
-            isActive={index === currentSlideIndex}
-            onClick={() => setCurrentSlide(index)}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDragEnd={handleDragEnd}
-            isDragging={dragIndex === index}
-            isDragOver={dragOverIndex === index && dragIndex !== index}
-          />
-        ))}
+      {/* Layers Panel */}
+      <div className="min-h-0 flex-1 rounded-lg border bg-white/95 shadow-lg backdrop-blur">
+        <LayerPanel />
       </div>
     </aside>
   )
