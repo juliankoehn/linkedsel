@@ -2,12 +2,11 @@
 
 import type Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
-import { Minus, Plus } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { ChevronLeft, ChevronRight, Copy, Minus, Plus, Square, Trash2 } from 'lucide-react'
+import { useCallback, useEffect, useRef } from 'react'
 import { Layer, Rect, Stage } from 'react-konva'
 
 import { Button } from '@/components/ui/button'
-
 import {
   ContextMenu,
   ContextMenuContent,
@@ -16,6 +15,7 @@ import {
   ContextMenuShortcut,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { calculateSnap, getElementsInRect } from '@/lib/konva/snap-utils'
 import { DISPLAY_SCALE_FACTOR, useCanvasStore } from '@/stores/canvas-store'
 import { useHistoryStore } from '@/stores/history-store'
@@ -29,36 +29,127 @@ import { SelectionTransformer } from './selection/transformer'
 import { SnapLines } from './snapping/snap-lines'
 import { TextOverlay } from './text-editor/text-overlay'
 
+// Gap between slides
+const SLIDE_GAP = 60
+const TOOLBAR_HEIGHT = 40
+
+interface SlideToolbarProps {
+  slideIndex: number
+  totalSlides: number
+  onDelete: () => void
+  onDuplicate: () => void
+  onAddBlank: () => void
+  onMoveLeft: () => void
+  onMoveRight: () => void
+}
+
+function SlideToolbar({
+  slideIndex,
+  totalSlides,
+  onDelete,
+  onDuplicate,
+  onAddBlank,
+  onMoveLeft,
+  onMoveRight,
+}: SlideToolbarProps) {
+  const isFirst = slideIndex === 0
+  const isLast = slideIndex === totalSlides - 1
+  const canDelete = totalSlides > 1
+
+  return (
+    <div className="absolute -top-10 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-lg border bg-white px-1 py-0.5 shadow-sm">
+      {!isFirst && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={onMoveLeft}
+              className="rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>Nach links</TooltipContent>
+        </Tooltip>
+      )}
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={onDelete}
+            disabled={!canDelete}
+            className="rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-red-600 disabled:opacity-30"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>Löschen</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={onDuplicate}
+            className="rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+          >
+            <Copy className="h-4 w-4" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>Duplizieren</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={onAddBlank}
+            className="rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+          >
+            <Square className="h-4 w-4" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>Leere Slide einfügen</TooltipContent>
+      </Tooltip>
+
+      {!isLast && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={onMoveRight}
+              className="rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>Nach rechts</TooltipContent>
+        </Tooltip>
+      )}
+    </div>
+  )
+}
+
 export function KonvaCanvas() {
-  const stageRef = useRef<Konva.Stage>(null)
+  const stageRefs = useRef<Map<number, Konva.Stage>>(new Map())
   const containerRef = useRef<HTMLDivElement>(null)
-  const selectionStartRef = useRef<{ x: number; y: number } | null>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const selectionStartRef = useRef<{ x: number; y: number; slideIndex: number } | null>(null)
 
   // Stores
-  const {
-    setStageRef,
-    getDimensions,
-    snapEnabled,
-    setGuidelines,
-    clearGuidelines,
-    zoom,
-    setZoom,
-    pan,
-    setPan,
-  } = useCanvasStore()
+  const { setStageRef, getDimensions, snapEnabled, setGuidelines, clearGuidelines, zoom, setZoom } =
+    useCanvasStore()
 
-  // Pan state
-  const [isPanning, setIsPanning] = useState(false)
-  const [isSpacePressed, setIsSpacePressed] = useState(false)
-  const panStartRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null)
   const {
     slides,
     currentSlideIndex,
+    setCurrentSlide,
+    addSlide,
+    deleteSlide,
+    duplicateSlide,
+    reorderSlides,
     updateElement,
     updateElements,
     deleteElements,
     getCurrentSlide,
   } = useSlidesStore()
+
   const {
     selectedIds,
     select,
@@ -68,23 +159,37 @@ export function KonvaCanvas() {
     setIsMultiSelecting,
     editingTextId,
   } = useSelectionStore()
+
   const { pushState } = useHistoryStore()
   const { markDirty, saveProject } = useProjectStore()
 
   const currentSlide = slides[currentSlideIndex]
   const { width, height } = getDimensions()
 
-  // Set stage ref in store
+  // Set stage ref in store for the current slide
   useEffect(() => {
-    if (stageRef.current) {
-      setStageRef(stageRef as React.RefObject<Konva.Stage | null>)
+    const stageRef = stageRefs.current.get(currentSlideIndex)
+    if (stageRef) {
+      setStageRef({ current: stageRef } as React.RefObject<Konva.Stage | null>)
     }
-  }, [setStageRef])
+  }, [currentSlideIndex, setStageRef, slides])
+
+  // Scroll to current slide when it changes
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    const scaledWidth = width * DISPLAY_SCALE_FACTOR * zoom
+    const slidePosition = currentSlideIndex * (scaledWidth + SLIDE_GAP)
+    const containerWidth = container.clientWidth
+    const scrollTarget = slidePosition - (containerWidth - scaledWidth) / 2
+
+    container.scrollTo({ left: scrollTarget, behavior: 'smooth' })
+  }, [currentSlideIndex, width, zoom])
 
   // Handle element selection
   const handleSelect = useCallback(
     (id: string, e: KonvaEventObject<MouseEvent>) => {
-      // Multi-select with Shift
       if (e.evt.shiftKey) {
         const currentSelection = selectedIds.includes(id)
           ? selectedIds.filter((s) => s !== id)
@@ -101,7 +206,6 @@ export function KonvaCanvas() {
   // Handle drag operations with snapping
   const handleDragStart = useCallback(
     (id: string) => {
-      // Save history before drag
       pushState(slides)
       if (!selectedIds.includes(id)) {
         select(id)
@@ -167,179 +271,122 @@ export function KonvaCanvas() {
     [updateElements, markDirty]
   )
 
-  // Handle stage click (deselect)
+  // Handle stage click on specific slide
   const handleStageClick = useCallback(
-    (e: KonvaEventObject<MouseEvent>) => {
-      // If clicked on empty area
+    (slideIndex: number, e: KonvaEventObject<MouseEvent>) => {
       if (e.target === e.target.getStage()) {
         clearSelection()
+        if (currentSlideIndex !== slideIndex) {
+          setCurrentSlide(slideIndex)
+        }
       }
     },
-    [clearSelection]
+    [clearSelection, currentSlideIndex, setCurrentSlide]
   )
 
-  // Handle stage mouse down (start selection rect)
+  // Selection rectangle handlers
   const handleStageMouseDown = useCallback(
-    (e: KonvaEventObject<MouseEvent>) => {
+    (slideIndex: number, e: KonvaEventObject<MouseEvent>) => {
       if (e.target !== e.target.getStage()) return
 
-      const stage = stageRef.current
+      // Set this slide as current if not already
+      if (currentSlideIndex !== slideIndex) {
+        setCurrentSlide(slideIndex)
+      }
+
+      const stage = stageRefs.current.get(slideIndex)
       if (!stage) return
 
       const pos = stage.getPointerPosition()
       if (!pos) return
 
-      // Adjust for zoom
       const adjustedPos = {
         x: pos.x / zoom,
         y: pos.y / zoom,
       }
 
-      selectionStartRef.current = adjustedPos
+      selectionStartRef.current = { ...adjustedPos, slideIndex }
       setIsMultiSelecting(true)
       setSelectionRect({ x: adjustedPos.x, y: adjustedPos.y, width: 0, height: 0 })
     },
-    [zoom, setIsMultiSelecting, setSelectionRect]
+    [zoom, currentSlideIndex, setCurrentSlide, setIsMultiSelecting, setSelectionRect]
   )
 
-  // Handle stage mouse move (update selection rect)
-  const handleStageMouseMove = useCallback(() => {
-    if (!selectionStartRef.current) return
+  const handleStageMouseMove = useCallback(
+    (slideIndex: number) => {
+      if (!selectionStartRef.current || selectionStartRef.current.slideIndex !== slideIndex) return
 
-    const stage = stageRef.current
-    if (!stage) return
+      const stage = stageRefs.current.get(slideIndex)
+      if (!stage) return
 
-    const pos = stage.getPointerPosition()
-    if (!pos) return
+      const pos = stage.getPointerPosition()
+      if (!pos) return
 
-    const adjustedPos = {
-      x: pos.x / zoom,
-      y: pos.y / zoom,
-    }
-
-    const start = selectionStartRef.current
-    const rect = {
-      x: Math.min(start.x, adjustedPos.x),
-      y: Math.min(start.y, adjustedPos.y),
-      width: Math.abs(adjustedPos.x - start.x),
-      height: Math.abs(adjustedPos.y - start.y),
-    }
-
-    setSelectionRect(rect)
-  }, [zoom, setSelectionRect])
-
-  // Handle stage mouse up (finish selection rect)
-  const handleStageMouseUp = useCallback(() => {
-    if (!selectionStartRef.current || !currentSlide) {
-      setIsMultiSelecting(false)
-      setSelectionRect(null)
-      selectionStartRef.current = null
-      return
-    }
-
-    const stage = stageRef.current
-    if (!stage) return
-
-    const pos = stage.getPointerPosition()
-    if (!pos) {
-      setIsMultiSelecting(false)
-      setSelectionRect(null)
-      selectionStartRef.current = null
-      return
-    }
-
-    const adjustedPos = {
-      x: pos.x / zoom,
-      y: pos.y / zoom,
-    }
-
-    const start = selectionStartRef.current
-    const rect = {
-      x: Math.min(start.x, adjustedPos.x),
-      y: Math.min(start.y, adjustedPos.y),
-      width: Math.abs(adjustedPos.x - start.x),
-      height: Math.abs(adjustedPos.y - start.y),
-    }
-
-    // Only select if dragged a meaningful distance
-    if (rect.width > 5 && rect.height > 5) {
-      const ids = getElementsInRect(currentSlide.elements, rect)
-      if (ids.length > 0) {
-        selectMultiple(ids)
+      const adjustedPos = {
+        x: pos.x / zoom,
+        y: pos.y / zoom,
       }
-    }
 
-    setIsMultiSelecting(false)
-    setSelectionRect(null)
-    selectionStartRef.current = null
-  }, [currentSlide, zoom, selectMultiple, setIsMultiSelecting, setSelectionRect])
-
-  // Zoom with wheel
-  const handleWheel = useCallback(
-    (e: WheelEvent) => {
-      e.preventDefault()
-      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
-      const ctrlKey = isMac ? e.metaKey : e.ctrlKey
-
-      if (ctrlKey) {
-        // Zoom
-        const delta = e.deltaY > 0 ? 0.9 : 1.1
-        const newZoom = Math.max(0.1, Math.min(3, zoom * delta))
-        setZoom(newZoom)
-      } else {
-        // Pan
-        setPan({
-          x: pan.x - e.deltaX,
-          y: pan.y - e.deltaY,
-        })
+      const start = selectionStartRef.current
+      const rect = {
+        x: Math.min(start.x, adjustedPos.x),
+        y: Math.min(start.y, adjustedPos.y),
+        width: Math.abs(adjustedPos.x - start.x),
+        height: Math.abs(adjustedPos.y - start.y),
       }
+
+      setSelectionRect(rect)
     },
-    [zoom, pan, setZoom, setPan]
+    [zoom, setSelectionRect]
   )
 
-  // Attach wheel handler
-  useEffect(() => {
-    const container = containerRef.current
-    if (!container) return
+  const handleStageMouseUp = useCallback(
+    (slideIndex: number) => {
+      if (!selectionStartRef.current || selectionStartRef.current.slideIndex !== slideIndex) {
+        setIsMultiSelecting(false)
+        setSelectionRect(null)
+        selectionStartRef.current = null
+        return
+      }
 
-    container.addEventListener('wheel', handleWheel, { passive: false })
-    return () => container.removeEventListener('wheel', handleWheel)
-  }, [handleWheel])
+      const slide = slides[slideIndex]
+      const stage = stageRefs.current.get(slideIndex)
+      if (!stage || !slide) return
 
-  // Pan handlers
-  const handlePanStart = useCallback(
-    (e: React.MouseEvent) => {
-      if (isSpacePressed || e.button === 1) {
-        e.preventDefault()
-        setIsPanning(true)
-        panStartRef.current = {
-          x: e.clientX,
-          y: e.clientY,
-          panX: pan.x,
-          panY: pan.y,
+      const pos = stage.getPointerPosition()
+      if (!pos) {
+        setIsMultiSelecting(false)
+        setSelectionRect(null)
+        selectionStartRef.current = null
+        return
+      }
+
+      const adjustedPos = {
+        x: pos.x / zoom,
+        y: pos.y / zoom,
+      }
+
+      const start = selectionStartRef.current
+      const rect = {
+        x: Math.min(start.x, adjustedPos.x),
+        y: Math.min(start.y, adjustedPos.y),
+        width: Math.abs(adjustedPos.x - start.x),
+        height: Math.abs(adjustedPos.y - start.y),
+      }
+
+      if (rect.width > 5 && rect.height > 5) {
+        const ids = getElementsInRect(slide.elements, rect)
+        if (ids.length > 0) {
+          selectMultiple(ids)
         }
       }
-    },
-    [isSpacePressed, pan]
-  )
 
-  const handlePanMove = useCallback(
-    (e: React.MouseEvent) => {
-      if (!isPanning || !panStartRef.current) return
-      const dx = e.clientX - panStartRef.current.x
-      const dy = e.clientY - panStartRef.current.y
-      setPan({
-        x: panStartRef.current.panX + dx,
-        y: panStartRef.current.panY + dy,
-      })
+      setIsMultiSelecting(false)
+      setSelectionRect(null)
+      selectionStartRef.current = null
     },
-    [isPanning, setPan]
+    [slides, zoom, selectMultiple, setIsMultiSelecting, setSelectionRect]
   )
-
-  const handlePanEnd = useCallback(() => {
-    setIsPanning(false)
-    panStartRef.current = null
-  }, [])
 
   // Zoom controls
   const zoomIn = useCallback(() => {
@@ -352,20 +399,77 @@ export function KonvaCanvas() {
 
   const resetZoom = useCallback(() => {
     setZoom(1)
-    setPan({ x: 0, y: 0 })
-  }, [setZoom, setPan])
+  }, [setZoom])
+
+  // Slide actions
+  const handleDeleteSlide = useCallback(
+    (index: number) => {
+      if (slides.length > 1) {
+        pushState(slides)
+        deleteSlide(index)
+        markDirty()
+      }
+    },
+    [slides, pushState, deleteSlide, markDirty]
+  )
+
+  const handleDuplicateSlide = useCallback(
+    (index: number) => {
+      pushState(slides)
+      duplicateSlide(index)
+      markDirty()
+    },
+    [slides, pushState, duplicateSlide, markDirty]
+  )
+
+  const handleAddBlankAfter = useCallback(
+    (index: number) => {
+      pushState(slides)
+      // Add at specific position
+      addSlide()
+      // Reorder to put it after current slide
+      if (index < slides.length - 1) {
+        reorderSlides(slides.length, index + 1)
+      }
+      setCurrentSlide(index + 1)
+      markDirty()
+    },
+    [slides, pushState, addSlide, reorderSlides, setCurrentSlide, markDirty]
+  )
+
+  const handleMoveSlideLeft = useCallback(
+    (index: number) => {
+      if (index > 0) {
+        pushState(slides)
+        reorderSlides(index, index - 1)
+        setCurrentSlide(index - 1)
+        markDirty()
+      }
+    },
+    [slides, pushState, reorderSlides, setCurrentSlide, markDirty]
+  )
+
+  const handleMoveSlideRight = useCallback(
+    (index: number) => {
+      if (index < slides.length - 1) {
+        pushState(slides)
+        reorderSlides(index, index + 1)
+        setCurrentSlide(index + 1)
+        markDirty()
+      }
+    },
+    [slides, pushState, reorderSlides, setCurrentSlide, markDirty]
+  )
+
+  const handleAddSlide = useCallback(() => {
+    pushState(slides)
+    addSlide()
+    markDirty()
+  }, [slides, pushState, addSlide, markDirty])
 
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Space for panning
-      if (e.code === 'Space' && !e.repeat) {
-        e.preventDefault()
-        setIsSpacePressed(true)
-        return
-      }
-
-      // Don't handle when typing in inputs
       if (
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement ||
@@ -391,11 +495,10 @@ export function KonvaCanvas() {
       if (ctrlKey && e.key === '0') {
         e.preventDefault()
         setZoom(1)
-        setPan({ x: 0, y: 0 })
         return
       }
 
-      // Delete
+      // Delete elements
       if (e.key === 'Delete' || e.key === 'Backspace') {
         if (selectedIds.length > 0) {
           e.preventDefault()
@@ -485,28 +588,34 @@ export function KonvaCanvas() {
           markDirty()
         }
       }
-    }
 
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.code === 'Space') {
-        setIsSpacePressed(false)
+      // Navigate slides with Page Up/Down
+      if (e.key === 'PageDown' || (e.key === 'ArrowRight' && e.altKey)) {
+        e.preventDefault()
+        if (currentSlideIndex < slides.length - 1) {
+          setCurrentSlide(currentSlideIndex + 1)
+        }
+        return
+      }
+      if (e.key === 'PageUp' || (e.key === 'ArrowLeft' && e.altKey)) {
+        e.preventDefault()
+        if (currentSlideIndex > 0) {
+          setCurrentSlide(currentSlideIndex - 1)
+        }
+        return
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
-    window.addEventListener('keyup', handleKeyUp)
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-      window.removeEventListener('keyup', handleKeyUp)
-    }
+    return () => window.removeEventListener('keydown', handleKeyDown)
   }, [
     selectedIds,
     slides,
     currentSlide,
+    currentSlideIndex,
     editingTextId,
     zoom,
     setZoom,
-    setPan,
     pushState,
     deleteElements,
     clearSelection,
@@ -515,9 +624,31 @@ export function KonvaCanvas() {
     getCurrentSlide,
     markDirty,
     saveProject,
+    setCurrentSlide,
   ])
 
-  // Z-order functions
+  // Wheel handler for horizontal scroll and zoom
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    const handleWheel = (e: WheelEvent) => {
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
+      const ctrlKey = isMac ? e.metaKey : e.ctrlKey
+
+      if (ctrlKey) {
+        e.preventDefault()
+        const delta = e.deltaY > 0 ? 0.9 : 1.1
+        const newZoom = Math.max(0.1, Math.min(3, zoom * delta))
+        setZoom(newZoom)
+      }
+    }
+
+    container.addEventListener('wheel', handleWheel, { passive: false })
+    return () => container.removeEventListener('wheel', handleWheel)
+  }, [zoom, setZoom])
+
+  // Z-order and context menu callbacks
   const bringToFront = useCallback(() => {
     const id = selectedIds[0]
     if (selectedIds.length === 1 && id) {
@@ -585,94 +716,149 @@ export function KonvaCanvas() {
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-        <div
-          ref={containerRef}
-          className={`relative flex h-full w-full items-center justify-center overflow-hidden bg-gray-100 ${
-            isSpacePressed || isPanning ? 'cursor-grab' : ''
-          } ${isPanning ? 'cursor-grabbing' : ''}`}
-          onMouseDown={handlePanStart}
-          onMouseMove={handlePanMove}
-          onMouseUp={handlePanEnd}
-          onMouseLeave={handlePanEnd}
-        >
-          {/* Canvas with zoom/pan transform */}
+        <div ref={containerRef} className="relative flex h-full w-full flex-col overflow-hidden">
+          {/* Horizontal scrolling canvas area */}
           <div
-            className="relative rounded-lg bg-white shadow-lg"
+            ref={scrollContainerRef}
+            className="flex flex-1 items-center gap-0 overflow-x-auto bg-gray-100"
             style={{
-              transform: `translate(${pan.x}px, ${pan.y}px)`,
+              paddingLeft: '40px',
+              paddingRight: '40px',
+              paddingTop: `${TOOLBAR_HEIGHT + 20}px`,
+              paddingBottom: '80px',
             }}
           >
-            <Stage
-              ref={stageRef}
-              width={scaledWidth}
-              height={scaledHeight}
-              scaleX={DISPLAY_SCALE_FACTOR * zoom}
-              scaleY={DISPLAY_SCALE_FACTOR * zoom}
-              onClick={handleStageClick}
-              onMouseDown={isPanning ? undefined : handleStageMouseDown}
-              onMouseMove={isPanning ? undefined : handleStageMouseMove}
-              onMouseUp={isPanning ? undefined : handleStageMouseUp}
-              onMouseLeave={isPanning ? undefined : handleStageMouseUp}
-            >
-              {/* Background Layer */}
-              <Layer>
-                <Rect
-                  x={0}
-                  y={0}
-                  width={width}
-                  height={height}
-                  fill={currentSlide?.backgroundColor || '#ffffff'}
-                  listening={false}
-                />
-              </Layer>
+            {slides.map((slide, slideIndex) => {
+              const isCurrentSlide = slideIndex === currentSlideIndex
+              const stageRef = stageRefs.current.get(slideIndex)
 
-              {/* Elements Layer */}
-              <Layer>
-                {currentSlide?.elements.map((element) => (
-                  <ElementRenderer
-                    key={element.id}
-                    element={element}
-                    isSelected={selectedIds.includes(element.id)}
-                    onSelect={handleSelect}
-                    onDragStart={handleDragStart}
-                    onDragMove={handleDragMove}
-                    onDragEnd={handleDragEnd}
-                    onTransformEnd={(id, updates) =>
-                      handleTransformEnd([
-                        {
-                          id,
-                          x: updates.x ?? element.x,
-                          y: updates.y ?? element.y,
-                          width: updates.width ?? element.width,
-                          height: updates.height ?? element.height,
-                          rotation: updates.rotation ?? element.rotation,
-                        },
-                      ])
-                    }
+              return (
+                <div
+                  key={slide.id}
+                  className="relative flex-shrink-0"
+                  style={{ marginRight: slideIndex < slides.length - 1 ? SLIDE_GAP : 0 }}
+                >
+                  {/* Per-slide toolbar */}
+                  <SlideToolbar
+                    slideIndex={slideIndex}
+                    totalSlides={slides.length}
+                    onDelete={() => handleDeleteSlide(slideIndex)}
+                    onDuplicate={() => handleDuplicateSlide(slideIndex)}
+                    onAddBlank={() => handleAddBlankAfter(slideIndex)}
+                    onMoveLeft={() => handleMoveSlideLeft(slideIndex)}
+                    onMoveRight={() => handleMoveSlideRight(slideIndex)}
                   />
-                ))}
 
-                {/* Snap Lines */}
-                <SnapLines stageWidth={width} stageHeight={height} />
+                  {/* Slide canvas */}
+                  <div
+                    className={`relative rounded-lg bg-white shadow-lg transition-shadow ${
+                      isCurrentSlide ? 'ring-2 ring-blue-500' : ''
+                    }`}
+                    onClick={() => {
+                      if (!isCurrentSlide) {
+                        setCurrentSlide(slideIndex)
+                      }
+                    }}
+                  >
+                    <Stage
+                      ref={(ref) => {
+                        if (ref) {
+                          stageRefs.current.set(slideIndex, ref)
+                        }
+                      }}
+                      width={scaledWidth}
+                      height={scaledHeight}
+                      scaleX={DISPLAY_SCALE_FACTOR * zoom}
+                      scaleY={DISPLAY_SCALE_FACTOR * zoom}
+                      onClick={(e) => handleStageClick(slideIndex, e)}
+                      onMouseDown={(e) => handleStageMouseDown(slideIndex, e)}
+                      onMouseMove={() => handleStageMouseMove(slideIndex)}
+                      onMouseUp={() => handleStageMouseUp(slideIndex)}
+                      onMouseLeave={() => handleStageMouseUp(slideIndex)}
+                    >
+                      {/* Background Layer */}
+                      <Layer>
+                        <Rect
+                          x={0}
+                          y={0}
+                          width={width}
+                          height={height}
+                          fill={slide.backgroundColor || '#ffffff'}
+                          listening={false}
+                        />
+                      </Layer>
 
-                {/* Selection Rectangle */}
-                <SelectionRect />
+                      {/* Elements Layer */}
+                      <Layer>
+                        {slide.elements.map((element) => (
+                          <ElementRenderer
+                            key={element.id}
+                            element={element}
+                            isSelected={isCurrentSlide && selectedIds.includes(element.id)}
+                            onSelect={handleSelect}
+                            onDragStart={handleDragStart}
+                            onDragMove={handleDragMove}
+                            onDragEnd={handleDragEnd}
+                            onTransformEnd={(id, updates) =>
+                              handleTransformEnd([
+                                {
+                                  id,
+                                  x: updates.x ?? element.x,
+                                  y: updates.y ?? element.y,
+                                  width: updates.width ?? element.width,
+                                  height: updates.height ?? element.height,
+                                  rotation: updates.rotation ?? element.rotation,
+                                },
+                              ])
+                            }
+                          />
+                        ))}
 
-                {/* Transformer */}
-                <SelectionTransformer
-                  stageRef={stageRef}
-                  selectedIds={selectedIds}
-                  onTransformEnd={handleTransformEnd}
-                />
-              </Layer>
-            </Stage>
+                        {/* Snap Lines - only for current slide */}
+                        {isCurrentSlide && <SnapLines stageWidth={width} stageHeight={height} />}
 
-            {/* Text Editing Overlay */}
-            <TextOverlay stageRef={stageRef} />
+                        {/* Selection Rectangle - only for current slide */}
+                        {isCurrentSlide && <SelectionRect />}
+
+                        {/* Transformer - only for current slide */}
+                        {isCurrentSlide && (
+                          <SelectionTransformer
+                            stageRef={{ current: stageRef ?? null }}
+                            selectedIds={selectedIds}
+                            onTransformEnd={handleTransformEnd}
+                          />
+                        )}
+                      </Layer>
+                    </Stage>
+
+                    {/* Text Editing Overlay - only for current slide */}
+                    {isCurrentSlide && (
+                      <TextOverlay
+                        stageRef={{ current: stageRef ?? null } as React.RefObject<Konva.Stage>}
+                      />
+                    )}
+                  </div>
+
+                  {/* Slide number */}
+                  <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs font-medium text-gray-400">
+                    {slideIndex + 1}
+                  </div>
+                </div>
+              )
+            })}
+
+            {/* Add slide button */}
+            <button
+              onClick={handleAddSlide}
+              className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-gray-300 text-gray-400 transition-colors hover:border-gray-400 hover:bg-gray-50 hover:text-gray-500"
+              style={{ marginLeft: slides.length > 0 ? SLIDE_GAP : 0 }}
+            >
+              <Plus className="h-8 w-8" />
+            </button>
           </div>
 
-          {/* Zoom Controls */}
-          <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 rounded-lg border bg-white px-2 py-1 shadow-sm">
+          {/* Zoom Controls - bottom right */}
+          <div className="absolute bottom-4 right-4 z-20 flex items-center gap-1 rounded-lg border bg-white px-2 py-1 shadow-sm">
             <Button
               variant="ghost"
               size="icon"
