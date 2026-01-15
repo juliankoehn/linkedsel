@@ -169,6 +169,12 @@ export interface FrameElement extends BaseElement {
   autoWidth: boolean
   autoHeight: boolean
 
+  // Size constraints (optional)
+  minWidth?: number
+  maxWidth?: number
+  minHeight?: number
+  maxHeight?: number
+
   // Visual
   fill?: string
   stroke?: string

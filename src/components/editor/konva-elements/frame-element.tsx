@@ -116,9 +116,17 @@ export function FrameElement({
         const layout = layoutMap.get(child.id)
 
         // Override child position with Yoga-calculated position
-        // Also lock children in auto-layout mode to prevent individual dragging
         const positionedChild =
-          hasAutoLayout && layout ? { ...child, x: layout.x, y: layout.y, locked: true } : child
+          hasAutoLayout && layout ? { ...child, x: layout.x, y: layout.y } : child
+
+        // In auto-layout mode, disable individual dragging but allow selection and transforms
+        const childDragHandlers = hasAutoLayout
+          ? {
+              onDragStart: () => {},
+              onDragMove: () => {},
+              onDragEnd: () => {},
+            }
+          : { onDragStart, onDragMove, onDragEnd }
 
         return (
           <ElementRenderer
@@ -126,9 +134,7 @@ export function FrameElement({
             element={positionedChild}
             isSelected={false}
             onSelect={onSelect}
-            onDragStart={onDragStart}
-            onDragMove={onDragMove}
-            onDragEnd={onDragEnd}
+            {...childDragHandlers}
             onTransformEnd={onTransformEnd as (id: string, updates: Partial<CanvasElement>) => void}
           />
         )

@@ -123,6 +123,12 @@ export function calculateFrameLayout(frame: FrameElement): LayoutResult[] {
   root.setFlexWrap(mapWrap(frame.layoutWrap))
   root.setGap(Gutter.All, frame.gap || 0)
 
+  // Set size constraints
+  if (frame.minWidth !== undefined) root.setMinWidth(frame.minWidth)
+  if (frame.maxWidth !== undefined) root.setMaxWidth(frame.maxWidth)
+  if (frame.minHeight !== undefined) root.setMinHeight(frame.minHeight)
+  if (frame.maxHeight !== undefined) root.setMaxHeight(frame.maxHeight)
+
   // Set padding
   root.setPadding(Edge.Top, frame.paddingTop || 0)
   root.setPadding(Edge.Right, frame.paddingRight || 0)
@@ -200,6 +206,12 @@ export function calculateFrameAutoSize(
   root.setJustifyContent(mapJustifyContent(frame.justifyContent))
   root.setFlexWrap(mapWrap(frame.layoutWrap))
   root.setGap(Gutter.All, frame.gap || 0)
+
+  // Set size constraints
+  if (frame.minWidth !== undefined) root.setMinWidth(frame.minWidth)
+  if (frame.maxWidth !== undefined) root.setMaxWidth(frame.maxWidth)
+  if (frame.minHeight !== undefined) root.setMinHeight(frame.minHeight)
+  if (frame.maxHeight !== undefined) root.setMaxHeight(frame.maxHeight)
 
   // Set padding
   root.setPadding(Edge.Top, frame.paddingTop || 0)
