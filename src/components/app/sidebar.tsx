@@ -20,7 +20,7 @@ export function AppSidebar() {
     <aside className="hidden w-14 flex-shrink-0 border-r bg-white lg:flex lg:flex-col">
       {/* Logo */}
       <div className="flex h-14 items-center justify-center border-b">
-        <Link href="/" className="text-brand-600 text-lg font-bold">
+        <Link href="/" className="text-lg font-bold text-blue-600">
           L
         </Link>
       </div>
@@ -37,7 +37,7 @@ export function AppSidebar() {
               className={cn(
                 'flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
                 isActive
-                  ? 'bg-brand-50 text-brand-600'
+                  ? 'bg-blue-50 text-blue-600'
                   : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
               )}
             >
@@ -55,7 +55,7 @@ export function AppSidebar() {
           className={cn(
             'mx-auto flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
             pathname.startsWith('/settings')
-              ? 'bg-brand-50 text-brand-600'
+              ? 'bg-blue-50 text-blue-600'
               : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
           )}
         >
