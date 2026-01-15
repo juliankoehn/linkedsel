@@ -1,15 +1,25 @@
 'use client'
 
+import { nanoid } from 'nanoid'
 import { useSearchParams } from 'next/navigation'
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useState } from 'react'
 
 import { AIPanel } from '@/components/editor/ai-panel'
-import { EditorCanvas } from '@/components/editor/canvas'
+import { KonvaCanvas } from '@/components/editor/konva-canvas'
 import { EditorSidebar } from '@/components/editor/sidebar'
 import { EditorToolbar } from '@/components/editor/toolbar'
 import { useToast } from '@/hooks/use-toast'
 import { getTemplateById } from '@/lib/templates/default-templates'
-import { useEditorStore } from '@/stores/editor'
+import { useCanvasStore } from '@/stores/canvas-store'
+import { useHistoryStore } from '@/stores/history-store'
+import { useProjectStore } from '@/stores/project-store'
+import { useSelectionStore } from '@/stores/selection-store'
+import {
+  createTextElement,
+  type Slide,
+  type TextElement,
+  useSlidesStore,
+} from '@/stores/slides-store'
 
 interface GeneratedSlide {
   headline: string
@@ -21,55 +31,229 @@ function EditorContent() {
   const searchParams = useSearchParams()
   const templateId = searchParams.get('template')
   const projectId = searchParams.get('project')
-  const loadTemplate = useEditorStore((state) => state.loadTemplate)
-  const loadProject = useEditorStore((state) => state.loadProject)
-  const applyAIContent = useEditorStore((state) => state.applyAIContent)
-  const reset = useEditorStore((state) => state.reset)
+
+  const { reset: resetProject } = useProjectStore()
+  const { setSlides, reset: resetSlides } = useSlidesStore()
+  const { getDimensions, reset: resetCanvas } = useCanvasStore()
+  const { reset: resetSelection } = useSelectionStore()
+  const { reset: resetHistory } = useHistoryStore()
+
   const [isLoading, setIsLoading] = useState(!!projectId)
   const [isAIPanelOpen, setIsAIPanelOpen] = useState(false)
   const { toast } = useToast()
+
+  // Load template and convert to new format
+  const loadTemplateToSlides = useCallback(
+    (tid: string) => {
+      const template = getTemplateById(tid)
+      if (!template) return
+
+      const slides: Slide[] = template.slides.map((slideTemplate) => {
+        const elements: any[] = []
+
+        for (const element of slideTemplate.elements) {
+          if (element.type === 'text') {
+            const props = element.props as any
+            elements.push(
+              createTextElement({
+                x: props.left,
+                y: props.top,
+                width: props.width || 300,
+                height: 50,
+                text: props.text,
+                fontSize: props.fontSize,
+                fontFamily: props.fontFamily,
+                fontWeight: props.fontWeight || 'normal',
+                fill: props.fill,
+                textAlign: props.textAlign || 'left',
+              })
+            )
+          } else if (element.type === 'shape') {
+            const props = element.props as any
+            if (props.shape === 'rect') {
+              elements.push({
+                id: nanoid(),
+                type: 'rect' as const,
+                x: props.left,
+                y: props.top,
+                width: props.width || 100,
+                height: props.height || 100,
+                rotation: 0,
+                opacity: 1,
+                visible: true,
+                locked: false,
+                fill: props.fill,
+                cornerRadius: props.rx || 0,
+              })
+            } else if (props.shape === 'circle') {
+              elements.push({
+                id: nanoid(),
+                type: 'circle' as const,
+                x: props.left,
+                y: props.top,
+                width: (props.radius || 50) * 2,
+                height: (props.radius || 50) * 2,
+                rotation: 0,
+                opacity: 1,
+                visible: true,
+                locked: false,
+                fill: props.fill,
+                radius: props.radius || 50,
+              })
+            }
+          }
+        }
+
+        return {
+          id: slideTemplate.id,
+          backgroundColor: slideTemplate.backgroundColor,
+          elements,
+        }
+      })
+
+      setSlides(slides)
+      useProjectStore.getState().setName(template.name)
+      useProjectStore.getState().markDirty()
+    },
+    [setSlides]
+  )
 
   useEffect(() => {
     const initEditor = async () => {
       if (projectId) {
         setIsLoading(true)
-        const result = await loadProject(projectId)
+        const result = await useProjectStore.getState().loadProject(projectId)
         if ('error' in result) {
           toast({
-            title: 'Fehler beim Laden',
+            title: 'Error loading project',
             description: result.error,
             variant: 'destructive',
           })
-          reset()
+          resetProject()
+          resetSlides()
+          resetCanvas()
+          resetSelection()
+          resetHistory()
+        } else {
+          // Apply loaded data
+          if (result.data.format) {
+            useCanvasStore.getState().setFormat(result.data.format)
+          }
+          if (result.data.slides) {
+            useSlidesStore.getState().setSlides(result.data.slides)
+          }
         }
         setIsLoading(false)
       } else if (templateId) {
-        const template = getTemplateById(templateId)
-        if (template) {
-          loadTemplate(template)
-        }
+        loadTemplateToSlides(templateId)
       } else {
-        reset()
+        resetProject()
+        resetSlides()
+        resetCanvas()
+        resetSelection()
+        resetHistory()
       }
     }
 
     initEditor()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [templateId, projectId, loadProject, loadTemplate, reset, toast])
+  }, [
+    templateId,
+    projectId,
+    toast,
+    resetProject,
+    resetSlides,
+    resetCanvas,
+    resetSelection,
+    resetHistory,
+    loadTemplateToSlides,
+  ])
 
   if (isLoading) {
     return (
       <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
-        <div className="text-gray-500">Projekt wird geladen...</div>
+        <div className="text-gray-500">Loading project...</div>
       </div>
     )
   }
 
-  const handleApplyAIContent = (slides: GeneratedSlide[]) => {
-    applyAIContent(slides)
+  const handleApplyAIContent = (aiSlides: GeneratedSlide[]) => {
+    const { width, height } = getDimensions()
+
+    const newSlides: Slide[] = aiSlides.map((aiSlide, index) => {
+      const elements: TextElement[] = []
+
+      // Headline
+      elements.push(
+        createTextElement({
+          x: 60,
+          y: index === 0 ? 120 : 80,
+          width: width - 120,
+          height: 80,
+          text: aiSlide.headline,
+          fontSize: index === 0 ? 64 : 56,
+          fontWeight: 'bold',
+          fill: '#1a1a1a',
+        })
+      )
+
+      // Body
+      elements.push(
+        createTextElement({
+          x: 60,
+          y: index === 0 ? 250 : 200,
+          width: width - 120,
+          height: 200,
+          text: aiSlide.body,
+          fontSize: 32,
+          fontWeight: 'normal',
+          fill: '#4a4a4a',
+        })
+      )
+
+      // Call to Action
+      if (aiSlide.callToAction && index === aiSlides.length - 1) {
+        elements.push(
+          createTextElement({
+            x: 60,
+            y: height - 200,
+            width: width - 120,
+            height: 50,
+            text: aiSlide.callToAction,
+            fontSize: 36,
+            fontWeight: 'bold',
+            fill: '#7c3aed',
+          })
+        )
+      }
+
+      // Slide number
+      elements.push(
+        createTextElement({
+          x: width - 100,
+          y: height - 80,
+          width: 80,
+          height: 30,
+          text: `${index + 1}/${aiSlides.length}`,
+          fontSize: 24,
+          fontWeight: 'normal',
+          fill: '#9ca3af',
+        })
+      )
+
+      return {
+        id: nanoid(),
+        backgroundColor: '#ffffff',
+        elements,
+      }
+    })
+
+    useHistoryStore.getState().pushState(useSlidesStore.getState().slides)
+    setSlides(newSlides)
+    useProjectStore.getState().markDirty()
+
     toast({
-      title: 'AI Content angewendet',
-      description: `${slides.length} Slides wurden erstellt.`,
+      title: 'AI Content applied',
+      description: `${aiSlides.length} slides have been created.`,
     })
   }
 
@@ -79,7 +263,7 @@ function EditorContent() {
         <EditorSidebar />
         <div className="flex flex-1 flex-col rounded-lg border bg-white">
           <EditorToolbar onOpenAIPanel={() => setIsAIPanelOpen(true)} />
-          <EditorCanvas />
+          <KonvaCanvas />
         </div>
       </div>
 
@@ -97,7 +281,7 @@ export default function EditorPage() {
     <Suspense
       fallback={
         <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
-          <div className="text-gray-500">Editor wird geladen...</div>
+          <div className="text-gray-500">Loading editor...</div>
         </div>
       }
     >

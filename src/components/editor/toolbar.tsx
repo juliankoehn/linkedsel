@@ -1,6 +1,5 @@
 'use client'
 
-import * as fabric from 'fabric'
 import {
   Bold,
   Check,
@@ -27,7 +26,18 @@ import { Button } from '@/components/ui/button'
 import { useExport } from '@/hooks/use-export'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
-import { FORMAT_PRESETS, type FormatPreset, useEditorStore } from '@/stores/editor'
+import { FORMAT_PRESETS, type FormatPreset, useCanvasStore } from '@/stores/canvas-store'
+import { useHistoryStore } from '@/stores/history-store'
+import { useProjectStore } from '@/stores/project-store'
+import { useSelectionStore } from '@/stores/selection-store'
+import {
+  createCircleElement,
+  createImageElement,
+  createRectElement,
+  createTextElement,
+  type TextElement,
+  useSlidesStore,
+} from '@/stores/slides-store'
 
 interface EditorToolbarProps {
   onOpenAIPanel?: () => void
@@ -39,27 +49,65 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
   const [isEditingName, setIsEditingName] = useState(false)
   const { toast } = useToast()
   const { exportPDF } = useExport()
-  const {
-    addText,
-    addShape,
-    addImage,
-    undo,
-    redo,
-    deleteSelected,
-    selectedObject,
-    updateSelectedObject,
-    setBackgroundColor,
-    canvas,
-    history,
-    projectName,
-    setProjectName,
-    saveProject,
-    isSaving,
-    isDirty,
-    format,
-    setFormat,
-  } = useEditorStore()
 
+  // Stores
+  const { format, setFormat, getDimensions } = useCanvasStore()
+  const {
+    slides,
+    currentSlideIndex,
+    addElement,
+    updateElement,
+    deleteElements,
+    setSlideBackground,
+  } = useSlidesStore()
+  const { selectedIds, clearSelection } = useSelectionStore()
+  const { pushState, canUndo, canRedo } = useHistoryStore()
+  const { name, setName, saveProject, isSaving, isDirty } = useProjectStore()
+
+  const currentSlide = slides[currentSlideIndex]
+  const selectedElement =
+    selectedIds.length === 1 ? currentSlide?.elements.find((el) => el.id === selectedIds[0]) : null
+
+  const { width, height } = getDimensions()
+
+  // Add text element
+  const addText = () => {
+    pushState(slides)
+    const element = createTextElement({
+      x: width / 2 - 150,
+      y: height / 2 - 30,
+      width: 300,
+      text: 'Your text here',
+    })
+    addElement(element)
+    useSelectionStore.getState().select(element.id)
+    useProjectStore.getState().markDirty()
+  }
+
+  // Add shape element
+  const addShape = (type: 'rect' | 'circle') => {
+    pushState(slides)
+    const element =
+      type === 'rect'
+        ? createRectElement({
+            x: width / 2 - 100,
+            y: height / 2 - 100,
+            width: 200,
+            height: 200,
+          })
+        : createCircleElement({
+            x: width / 2 - 100,
+            y: height / 2 - 100,
+            width: 200,
+            height: 200,
+            radius: 100,
+          })
+    addElement(element)
+    useSelectionStore.getState().select(element.id)
+    useProjectStore.getState().markDirty()
+  }
+
+  // Add image
   const handleImageUpload = () => {
     fileInputRef.current?.click()
   }
@@ -67,27 +115,70 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      await addImage(file)
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        const dataUrl = event.target?.result as string
+        if (dataUrl) {
+          pushState(slides)
+          const element = createImageElement(dataUrl, {
+            x: width / 2 - 200,
+            y: height / 2 - 150,
+            width: 400,
+            height: 300,
+          })
+          addElement(element)
+          useSelectionStore.getState().select(element.id)
+          useProjectStore.getState().markDirty()
+        }
+      }
+      reader.readAsDataURL(file)
       e.target.value = ''
     }
   }
 
+  // Undo/Redo
+  const undo = () => {
+    const previousState = useHistoryStore.getState().undo()
+    if (previousState) {
+      useSlidesStore.getState().setSlides(previousState)
+    }
+  }
+
+  const redo = () => {
+    const nextState = useHistoryStore.getState().redo()
+    if (nextState) {
+      useSlidesStore.getState().setSlides(nextState)
+    }
+  }
+
+  // Delete selected
+  const deleteSelected = () => {
+    if (selectedIds.length > 0) {
+      pushState(slides)
+      deleteElements(selectedIds)
+      clearSelection()
+      useProjectStore.getState().markDirty()
+    }
+  }
+
+  // Save
   const handleSave = async () => {
-    const result = await saveProject()
+    const result = await saveProject(format, slides)
     if ('error' in result) {
       toast({
-        title: 'Fehler beim Speichern',
+        title: 'Error saving',
         description: result.error,
         variant: 'destructive',
       })
     } else {
       toast({
-        title: 'Gespeichert',
-        description: 'Dein Projekt wurde erfolgreich gespeichert.',
+        title: 'Saved',
+        description: 'Your project has been saved successfully.',
       })
     }
   }
 
+  // Name editing
   const handleNameEdit = () => {
     setIsEditingName(true)
     setTimeout(() => nameInputRef.current?.focus(), 0)
@@ -105,43 +196,60 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
     }
   }
 
-  const isTextObject = selectedObject instanceof fabric.IText
-  const fill = (selectedObject?.fill as string) || '#000000'
-  const fontSize = isTextObject ? (selectedObject as fabric.IText).fontSize || 48 : 48
-  const fontWeight = isTextObject ? (selectedObject as fabric.IText).fontWeight : 'normal'
-  const fontStyle = isTextObject ? (selectedObject as fabric.IText).fontStyle : 'normal'
+  // Background color
+  const handleBackgroundChange = (color: string) => {
+    pushState(slides)
+    setSlideBackground(currentSlideIndex, color)
+    useProjectStore.getState().markDirty()
+  }
+
+  // Text formatting
+  const isTextElement = selectedElement?.type === 'text'
+  const textElement = isTextElement ? (selectedElement as TextElement) : null
+  const fill =
+    textElement?.fill || (selectedElement && 'fill' in selectedElement)
+      ? (selectedElement as any).fill
+      : '#000000'
+  const fontSize = textElement?.fontSize || 48
+  const fontWeight = textElement?.fontWeight || 'normal'
+  const fontStyle = textElement?.fontStyle || 'normal'
 
   const handleFillChange = (color: string) => {
-    if (selectedObject) {
-      updateSelectedObject({ fill: color })
+    if (selectedElement) {
+      pushState(slides)
+      updateElement(selectedElement.id, { fill: color } as any)
+      useProjectStore.getState().markDirty()
     }
   }
 
   const handleFontSizeChange = (delta: number) => {
-    if (isTextObject) {
+    if (textElement) {
       const newSize = Math.max(8, Math.min(200, fontSize + delta))
-      updateSelectedObject({ fontSize: newSize })
+      pushState(slides)
+      updateElement(textElement.id, { fontSize: newSize })
+      useProjectStore.getState().markDirty()
     }
   }
 
   const toggleBold = () => {
-    if (isTextObject) {
-      updateSelectedObject({
+    if (textElement) {
+      pushState(slides)
+      updateElement(textElement.id, {
         fontWeight: fontWeight === 'bold' ? 'normal' : 'bold',
       })
+      useProjectStore.getState().markDirty()
     }
   }
 
   const toggleItalic = () => {
-    if (isTextObject) {
-      updateSelectedObject({
+    if (textElement) {
+      pushState(slides)
+      updateElement(textElement.id, {
         fontStyle: fontStyle === 'italic' ? 'normal' : 'italic',
       })
+      useProjectStore.getState().markDirty()
     }
   }
-
-  const canUndo = history.past.length > 0
-  const canRedo = history.future.length > 0
 
   return (
     <div className="flex flex-col border-b">
@@ -153,8 +261,8 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
               <input
                 ref={nameInputRef}
                 type="text"
-                value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 onBlur={handleNameSubmit}
                 onKeyDown={handleNameKeyDown}
                 className="rounded border px-2 py-1 text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -168,11 +276,11 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
               onClick={handleNameEdit}
               className="flex items-center gap-1 rounded px-2 py-1 text-sm font-medium hover:bg-gray-100"
             >
-              {projectName}
+              {name}
               <Pencil className="h-3 w-3 text-gray-400" />
             </button>
           )}
-          {isDirty && <span className="text-xs text-gray-400">Ungespeichert</span>}
+          {isDirty && <span className="text-xs text-gray-400">Unsaved</span>}
         </div>
 
         <div className="flex items-center gap-2">
@@ -195,7 +303,7 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
             ) : (
               <Save className="mr-2 h-4 w-4" />
             )}
-            Speichern
+            Save
           </Button>
 
           {onOpenAIPanel && (
@@ -228,37 +336,37 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
         />
 
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" onClick={() => addText()} title="Text hinzufügen">
+          <Button variant="ghost" size="icon" onClick={addText} title="Add text">
             <Type className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleImageUpload} title="Bild hochladen">
+          <Button variant="ghost" size="icon" onClick={handleImageUpload} title="Upload image">
             <ImageIcon className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => addShape('rect')} title="Rechteck">
+          <Button variant="ghost" size="icon" onClick={() => addShape('rect')} title="Rectangle">
             <Square className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => addShape('circle')} title="Kreis">
+          <Button variant="ghost" size="icon" onClick={() => addShape('circle')} title="Circle">
             <Circle className="h-4 w-4" />
           </Button>
 
           <div className="mx-2 h-6 w-px bg-gray-200" />
 
-          <div className="flex items-center gap-1" title="Hintergrundfarbe">
+          <div className="flex items-center gap-1" title="Background color">
             <Palette className="text-muted-foreground h-4 w-4" />
             <input
               type="color"
-              value={(canvas?.backgroundColor as string) || '#ffffff'}
-              onChange={(e) => setBackgroundColor(e.target.value)}
+              value={currentSlide?.backgroundColor || '#ffffff'}
+              onChange={(e) => handleBackgroundChange(e.target.value)}
               className="h-7 w-7 cursor-pointer rounded border border-gray-200 p-0.5"
             />
           </div>
 
-          {selectedObject && (
+          {selectedElement && (
             <>
               <div className="mx-2 h-6 w-px bg-gray-200" />
 
-              <div className="flex items-center gap-1" title="Füllfarbe">
-                <span className="text-muted-foreground text-xs">Farbe:</span>
+              <div className="flex items-center gap-1" title="Fill color">
+                <span className="text-muted-foreground text-xs">Color:</span>
                 <input
                   type="color"
                   value={fill}
@@ -267,7 +375,7 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
                 />
               </div>
 
-              {isTextObject && (
+              {isTextElement && (
                 <>
                   <div className="mx-2 h-6 w-px bg-gray-200" />
 
@@ -277,7 +385,7 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
                       size="icon"
                       className="h-7 w-7"
                       onClick={() => handleFontSizeChange(-4)}
-                      title="Schrift verkleinern"
+                      title="Decrease font size"
                     >
                       <Minus className="h-3 w-3" />
                     </Button>
@@ -287,7 +395,7 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
                       size="icon"
                       className="h-7 w-7"
                       onClick={() => handleFontSizeChange(4)}
-                      title="Schrift vergrößern"
+                      title="Increase font size"
                     >
                       <Plus className="h-3 w-3" />
                     </Button>
@@ -300,7 +408,7 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
                     size="icon"
                     className={cn('h-7 w-7', fontWeight === 'bold' && 'bg-accent')}
                     onClick={toggleBold}
-                    title="Fett"
+                    title="Bold"
                   >
                     <Bold className="h-3 w-3" />
                   </Button>
@@ -309,7 +417,7 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
                     size="icon"
                     className={cn('h-7 w-7', fontStyle === 'italic' && 'bg-accent')}
                     onClick={toggleItalic}
-                    title="Kursiv"
+                    title="Italic"
                   >
                     <Italic className="h-3 w-3" />
                   </Button>
@@ -324,8 +432,8 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
             variant="ghost"
             size="icon"
             onClick={undo}
-            disabled={!canUndo}
-            title="Rückgängig (Strg+Z)"
+            disabled={!canUndo()}
+            title="Undo (Ctrl+Z)"
           >
             <Undo className="h-4 w-4" />
           </Button>
@@ -333,12 +441,18 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
             variant="ghost"
             size="icon"
             onClick={redo}
-            disabled={!canRedo}
-            title="Wiederherstellen (Strg+Y)"
+            disabled={!canRedo()}
+            title="Redo (Ctrl+Y)"
           >
             <Redo className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={deleteSelected} title="Löschen (Entf)">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={deleteSelected}
+            disabled={selectedIds.length === 0}
+            title="Delete (Del)"
+          >
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
