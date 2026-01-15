@@ -23,7 +23,10 @@
       "Bash(grep:*)",
       "Bash(npm run lint:*)",
       "Bash(npx tsc:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(pnpm test:coverage:*)",
+      "Bash(pnpm format:check:*)",
+      "Bash(pnpm format:*)"
     ]
   }
 }
