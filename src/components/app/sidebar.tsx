@@ -34,13 +34,16 @@ export function AppSidebar() {
               href={item.href}
               title={item.name}
               className={cn(
-                'flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
-                isActive
-                  ? 'bg-blue-50 text-blue-600'
-                  : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+                'group flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
+                isActive ? 'bg-blue-50' : 'hover:bg-gray-100'
               )}
             >
-              <item.icon className="h-5 w-5" />
+              <item.icon
+                className={cn(
+                  'h-5 w-5 transition-colors',
+                  isActive ? 'stroke-blue-600' : 'stroke-gray-500 group-hover:stroke-gray-700'
+                )}
+              />
             </Link>
           )
         })}
@@ -52,19 +55,24 @@ export function AppSidebar() {
           href="/settings"
           title="Einstellungen"
           className={cn(
-            'flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
-            pathname.startsWith('/settings')
-              ? 'bg-blue-50 text-blue-600'
-              : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+            'group flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
+            pathname.startsWith('/settings') ? 'bg-blue-50' : 'hover:bg-gray-100'
           )}
         >
-          <Settings className="h-5 w-5" />
+          <Settings
+            className={cn(
+              'h-5 w-5 transition-colors',
+              pathname.startsWith('/settings')
+                ? 'stroke-blue-600'
+                : 'stroke-gray-500 group-hover:stroke-gray-700'
+            )}
+          />
         </Link>
         <button
           title="Profil"
-          className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+          className="group flex h-10 w-10 items-center justify-center rounded-lg transition-colors hover:bg-gray-100"
         >
-          <User className="h-5 w-5" />
+          <User className="h-5 w-5 stroke-gray-500 transition-colors group-hover:stroke-gray-700" />
         </button>
       </div>
     </aside>
