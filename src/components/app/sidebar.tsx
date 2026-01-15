@@ -1,6 +1,6 @@
 'use client'
 
-import { LayoutDashboard, LayoutTemplate, Palette, PenTool, Settings } from 'lucide-react'
+import { LayoutDashboard, LayoutTemplate, Palette, Settings, User } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -8,7 +8,6 @@ import { cn } from '@/lib/utils'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Editor', href: '/editor', icon: PenTool },
   { name: 'Templates', href: '/templates', icon: LayoutTemplate },
   { name: 'Brand Kits', href: '/brand-kits', icon: Palette },
 ]
@@ -47,13 +46,13 @@ export function AppSidebar() {
         })}
       </nav>
 
-      {/* Settings at bottom */}
-      <div className="border-t py-3">
+      {/* Bottom section: Settings & User */}
+      <div className="flex flex-col items-center gap-1 border-t py-3">
         <Link
           href="/settings"
           title="Einstellungen"
           className={cn(
-            'mx-auto flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
+            'flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
             pathname.startsWith('/settings')
               ? 'bg-blue-50 text-blue-600'
               : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
@@ -61,6 +60,12 @@ export function AppSidebar() {
         >
           <Settings className="h-5 w-5" />
         </Link>
+        <button
+          title="Profil"
+          className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+        >
+          <User className="h-5 w-5" />
+        </button>
       </div>
     </aside>
   )
