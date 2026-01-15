@@ -19,6 +19,7 @@ import { ColorButton } from '@/components/editor/color-picker'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useHistoryStore } from '@/stores/history-store'
 import { useProjectStore } from '@/stores/project-store'
 import { useSelectionStore } from '@/stores/selection-store'
@@ -105,59 +106,79 @@ function FrameProperties({ element, onUpdate }: FramePropertiesProps) {
 
       {/* Layout Mode - Flow */}
       <div className="mb-3">
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => handleLayoutChange('none')}
-            className={`rounded border p-1.5 ${
-              element.layoutMode === 'none'
-                ? 'border-blue-500 bg-blue-50 text-blue-600'
-                : 'text-gray-500 hover:bg-gray-50'
-            }`}
-            title="Kein Auto-Layout"
-          >
-            <Unlink className="h-3.5 w-3.5" />
-          </button>
-          <button
-            onClick={() => handleLayoutChange('horizontal')}
-            className={`rounded border p-1.5 ${
-              element.layoutMode === 'horizontal'
-                ? 'border-blue-500 bg-blue-50 text-blue-600'
-                : 'text-gray-500 hover:bg-gray-50'
-            }`}
-            title="Horizontal"
-          >
-            <Columns3 className="h-3.5 w-3.5" />
-          </button>
-          <button
-            onClick={() => handleLayoutChange('vertical')}
-            className={`rounded border p-1.5 ${
-              element.layoutMode === 'vertical'
-                ? 'border-blue-500 bg-blue-50 text-blue-600'
-                : 'text-gray-500 hover:bg-gray-50'
-            }`}
-            title="Vertikal"
-          >
-            <Rows3 className="h-3.5 w-3.5" />
-          </button>
-          <div className="flex-1" />
-          {element.layoutMode !== 'none' && (
-            <button
-              onClick={() =>
-                handleLayoutUpdate({
-                  layoutWrap: element.layoutWrap === 'wrap' ? 'nowrap' : 'wrap',
-                })
-              }
-              className={`rounded border p-1.5 ${
-                element.layoutWrap === 'wrap'
-                  ? 'border-blue-500 bg-blue-50 text-blue-600'
-                  : 'text-gray-500 hover:bg-gray-50'
-              }`}
-              title="Wrap umschalten"
-            >
-              <GripHorizontal className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
+        <TooltipProvider delayDuration={300}>
+          <div className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => handleLayoutChange('none')}
+                  className={`rounded border p-1.5 ${
+                    element.layoutMode === 'none'
+                      ? 'border-blue-500 bg-blue-50 text-blue-600'
+                      : 'text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  <Unlink className="h-3.5 w-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Kein Auto-Layout</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => handleLayoutChange('horizontal')}
+                  className={`rounded border p-1.5 ${
+                    element.layoutMode === 'horizontal'
+                      ? 'border-blue-500 bg-blue-50 text-blue-600'
+                      : 'text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  <Columns3 className="h-3.5 w-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Horizontal</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => handleLayoutChange('vertical')}
+                  className={`rounded border p-1.5 ${
+                    element.layoutMode === 'vertical'
+                      ? 'border-blue-500 bg-blue-50 text-blue-600'
+                      : 'text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  <Rows3 className="h-3.5 w-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Vertikal</TooltipContent>
+            </Tooltip>
+            <div className="flex-1" />
+            {element.layoutMode !== 'none' && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() =>
+                      handleLayoutUpdate({
+                        layoutWrap: element.layoutWrap === 'wrap' ? 'nowrap' : 'wrap',
+                      })
+                    }
+                    className={`rounded border p-1.5 ${
+                      element.layoutWrap === 'wrap'
+                        ? 'border-blue-500 bg-blue-50 text-blue-600'
+                        : 'text-gray-500 hover:bg-gray-50'
+                    }`}
+                  >
+                    <GripHorizontal className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {element.layoutWrap === 'wrap' ? 'Wrap deaktivieren' : 'Wrap aktivieren'}
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+        </TooltipProvider>
       </div>
 
       {element.layoutMode !== 'none' && (
@@ -193,13 +214,21 @@ function FrameProperties({ element, onUpdate }: FramePropertiesProps) {
           <div className="mb-3">
             <div className="mb-1 flex items-center justify-between">
               <Label className="text-[10px] text-gray-400">Padding</Label>
-              <button
-                onClick={() => setShowIndividualPadding(!showIndividualPadding)}
-                className={`rounded p-0.5 hover:bg-gray-100 ${showIndividualPadding ? 'text-blue-500' : 'text-gray-400'}`}
-                title={showIndividualPadding ? 'Vereinfacht' : 'Individuell'}
-              >
-                <GripHorizontal className="h-3 w-3" />
-              </button>
+              <TooltipProvider delayDuration={300}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setShowIndividualPadding(!showIndividualPadding)}
+                      className={`rounded p-0.5 hover:bg-gray-100 ${showIndividualPadding ? 'text-blue-500' : 'text-gray-400'}`}
+                    >
+                      <GripHorizontal className="h-3 w-3" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {showIndividualPadding ? 'Vereinfacht (2 Werte)' : 'Individuell (4 Werte)'}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             {showIndividualPadding ? (
               // Individual padding (4 inputs)
