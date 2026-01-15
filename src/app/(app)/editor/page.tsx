@@ -260,13 +260,26 @@ function EditorContent() {
 
   return (
     <>
-      <div className="flex h-[calc(100vh-8rem)] gap-4">
-        <EditorSidebar />
-        <div className="flex flex-1 flex-col rounded-lg border bg-white">
+      <div className="relative h-[calc(100vh-8rem)] overflow-hidden">
+        {/* Toolbar - fixed at top */}
+        <div className="absolute inset-x-0 top-0 z-20 border-b bg-white">
           <EditorToolbar onOpenAIPanel={() => setIsAIPanelOpen(true)} />
+        </div>
+
+        {/* Canvas - full area behind sidebars */}
+        <div className="absolute inset-0 pt-[105px]">
           <KonvaCanvas />
         </div>
-        <PropertiesPanel />
+
+        {/* Left Sidebar - overlay */}
+        <div className="absolute left-4 top-[120px] z-10">
+          <EditorSidebar />
+        </div>
+
+        {/* Right Sidebar - overlay */}
+        <div className="absolute right-4 top-[120px] z-10">
+          <PropertiesPanel />
+        </div>
       </div>
 
       <AIPanel

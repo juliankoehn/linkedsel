@@ -32,7 +32,9 @@
       "Bash(pnpm check:fix:*)",
       "Bash(pnpm remove:*)",
       "mcp__plugin_playwright_playwright__browser_navigate",
-      "Bash(lsof:*)"
+      "Bash(lsof:*)",
+      "Bash(pkill:*)",
+      "Bash(pnpm next:*)"
     ]
   }
 }
