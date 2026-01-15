@@ -82,11 +82,12 @@ interface CanvasActions {
 type CanvasStore = CanvasState & CanvasActions
 
 const DISPLAY_SCALE = 0.4
+const DEFAULT_ZOOM = 0.95
 
 const initialState: CanvasState = {
   stageRef: null,
   format: 'linkedin-portrait',
-  zoom: DISPLAY_SCALE,
+  zoom: DEFAULT_ZOOM,
   pan: { x: 0, y: 0 },
   gridEnabled: false,
   snapEnabled: true,

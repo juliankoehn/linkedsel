@@ -797,8 +797,8 @@ export function KonvaCanvas() {
               isSpacePressed || isPanning ? 'cursor-grab' : ''
             } ${isPanning ? 'cursor-grabbing' : ''}`}
             style={{
-              paddingLeft: '40px',
-              paddingRight: '40px',
+              paddingLeft: '80px',
+              paddingRight: '80px',
               paddingTop: `${TOOLBAR_HEIGHT + 20}px`,
               paddingBottom: '80px',
             }}
