@@ -171,7 +171,7 @@ function EditorContent() {
 
   if (isLoading) {
     return (
-      <div className="-m-6 flex h-[calc(100vh-4rem)] items-center justify-center bg-gray-100">
+      <div className="flex h-full items-center justify-center bg-gray-100">
         <div className="text-gray-500">Loading project...</div>
       </div>
     )
@@ -260,8 +260,7 @@ function EditorContent() {
 
   return (
     <>
-      {/* Use negative margin to cancel parent padding and expand to full space */}
-      <div className="relative -m-6 h-[calc(100vh-4rem)] overflow-hidden">
+      <div className="relative h-full overflow-hidden">
         {/* Toolbar - fixed at top */}
         <div className="absolute inset-x-0 top-0 z-20 border-b bg-white">
           <EditorToolbar onOpenAIPanel={() => setIsAIPanelOpen(true)} />
@@ -273,7 +272,7 @@ function EditorContent() {
         </div>
 
         {/* Left Sidebar - overlay */}
-        <div className="absolute left-3 top-[112px] z-10">
+        <div className="absolute bottom-3 left-3 top-[112px] z-10">
           <EditorSidebar />
         </div>
 
@@ -296,7 +295,7 @@ export default function EditorPage() {
   return (
     <Suspense
       fallback={
-        <div className="-m-6 flex h-[calc(100vh-4rem)] items-center justify-center bg-gray-100">
+        <div className="flex h-full items-center justify-center bg-gray-100">
           <div className="text-gray-500">Loading editor...</div>
         </div>
       }

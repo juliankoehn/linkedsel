@@ -81,7 +81,7 @@ export function PropertiesPanel() {
   if (!selectedElement) return null
 
   return (
-    <aside className="max-h-[calc(100vh-10rem)] w-48 flex-shrink-0 overflow-y-auto rounded-lg border bg-white/95 p-3 shadow-lg backdrop-blur">
+    <aside className="max-h-[calc(100vh-8rem)] w-48 flex-shrink-0 overflow-y-auto rounded-lg border bg-white/95 p-3 shadow-lg backdrop-blur">
       <h3 className="mb-3 text-xs font-medium text-gray-500">Properties</h3>
 
       {/* Position */}

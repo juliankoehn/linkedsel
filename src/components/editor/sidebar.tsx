@@ -231,7 +231,7 @@ export function EditorSidebar() {
   const { slides, currentSlideIndex, setCurrentSlide, addSlide } = useSlidesStore()
 
   return (
-    <aside className="flex max-h-[calc(100vh-10rem)] w-32 flex-col rounded-lg border bg-white/95 shadow-lg backdrop-blur">
+    <aside className="flex h-full w-32 flex-col rounded-lg border bg-white/95 shadow-lg backdrop-blur">
       {/* Header with count and add button */}
       <div className="flex shrink-0 items-center justify-between border-b px-2 py-1.5">
         <span className="text-[10px] font-medium text-gray-500">{slides.length} Slides</span>
