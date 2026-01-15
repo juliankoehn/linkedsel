@@ -18,29 +18,36 @@ interface EditorState {
   history: { past: Slide[][]; future: Slide[][] }
   projectName: string
   hasWatermark: boolean
+  selectedObject: fabric.FabricObject | null
 
   // Actions
   initCanvas: (canvasElement: HTMLCanvasElement) => void
   setCurrentSlide: (index: number) => void
   addSlide: () => void
+  duplicateSlide: (index: number) => void
   removeSlide: (index: number) => void
   addText: () => void
   addShape: (type: 'rect' | 'circle') => void
-  addImage: (url: string) => void
+  addImage: (file: File) => Promise<void>
+  addImageFromUrl: (url: string) => Promise<void>
   deleteSelected: () => void
   undo: () => void
   redo: () => void
+  saveHistory: () => void
   exportPDF: () => Promise<void>
   saveCurrentSlide: () => void
   loadTemplate: (template: CarouselTemplate) => void
   setProjectName: (name: string) => void
   setHasWatermark: (hasWatermark: boolean) => void
+  setBackgroundColor: (color: string) => void
+  updateSelectedObject: (props: Record<string, unknown>) => void
+  setSelectedObject: (obj: fabric.FabricObject | null) => void
   reset: () => void
 }
 
 // LinkedIn carousel dimensions (1080 x 1350)
-const CANVAS_WIDTH = 1080
-const CANVAS_HEIGHT = 1350
+export const CANVAS_WIDTH = 1080
+export const CANVAS_HEIGHT = 1350
 const DISPLAY_SCALE = 0.4
 
 const createEmptySlide = (): Slide => ({
@@ -48,6 +55,14 @@ const createEmptySlide = (): Slide => ({
   backgroundColor: '#ffffff',
   objects: [],
 })
+
+// Deep clone slides for history
+const cloneSlides = (slides: Slide[]): Slide[] => {
+  return slides.map((slide) => ({
+    ...slide,
+    objects: [...slide.objects],
+  }))
+}
 
 export const useEditorStore = create<EditorState>()(
   devtools(
@@ -58,16 +73,41 @@ export const useEditorStore = create<EditorState>()(
       history: { past: [], future: [] },
       projectName: 'Neues Carousel',
       hasWatermark: true,
+      selectedObject: null,
 
       initCanvas: (canvasElement: HTMLCanvasElement) => {
+        // Dispose of existing canvas if any
+        const existingCanvas = get().canvas
+        if (existingCanvas) {
+          existingCanvas.dispose()
+        }
+
         const canvas = new fabric.Canvas(canvasElement, {
           width: CANVAS_WIDTH * DISPLAY_SCALE,
           height: CANVAS_HEIGHT * DISPLAY_SCALE,
           backgroundColor: '#ffffff',
+          selection: true,
+          preserveObjectStacking: true,
         })
 
         // Set zoom to display scale
         canvas.setZoom(DISPLAY_SCALE)
+
+        // Selection event handlers
+        canvas.on('selection:created', (e) => {
+          set({ selectedObject: e.selected?.[0] || null })
+        })
+        canvas.on('selection:updated', (e) => {
+          set({ selectedObject: e.selected?.[0] || null })
+        })
+        canvas.on('selection:cleared', () => {
+          set({ selectedObject: null })
+        })
+
+        // Auto-save on object modification
+        canvas.on('object:modified', () => {
+          get().saveCurrentSlide()
+        })
 
         // Load first slide if it has objects
         const { slides, currentSlideIndex } = get()
@@ -77,6 +117,7 @@ export const useEditorStore = create<EditorState>()(
           currentSlide.objects.forEach((obj) => canvas.add(obj))
         }
 
+        canvas.renderAll()
         set({ canvas })
       },
 
@@ -98,10 +139,11 @@ export const useEditorStore = create<EditorState>()(
         }
 
         canvas.renderAll()
-        set({ currentSlideIndex: index })
+        set({ currentSlideIndex: index, selectedObject: null })
       },
 
       addSlide: () => {
+        get().saveHistory()
         const { slides, canvas } = get()
 
         // Save current slide first
@@ -123,36 +165,89 @@ export const useEditorStore = create<EditorState>()(
         }
       },
 
+      duplicateSlide: (index: number) => {
+        get().saveHistory()
+        const { slides, canvas } = get()
+        const slideToClone = slides[index]
+        if (!slideToClone) return
+
+        // Save current slide first
+        if (canvas) {
+          get().saveCurrentSlide()
+        }
+
+        const newSlide: Slide = {
+          id: generateId(),
+          backgroundColor: slideToClone.backgroundColor,
+          objects: [...slideToClone.objects],
+        }
+
+        const newSlides = [...slides]
+        newSlides.splice(index + 1, 0, newSlide)
+
+        set({
+          slides: newSlides,
+          currentSlideIndex: index + 1,
+        })
+
+        // Load the duplicated slide
+        if (canvas) {
+          canvas.clear()
+          canvas.backgroundColor = newSlide.backgroundColor
+          newSlide.objects.forEach((obj) => canvas.add(obj))
+          canvas.renderAll()
+        }
+      },
+
       removeSlide: (index: number) => {
-        const { slides, currentSlideIndex } = get()
+        const { slides, currentSlideIndex, canvas } = get()
         if (slides.length <= 1) return
+
+        get().saveHistory()
 
         const newSlides = slides.filter((_, i) => i !== index)
         const newIndex = Math.min(currentSlideIndex, newSlides.length - 1)
 
         set({ slides: newSlides, currentSlideIndex: newIndex })
+
+        // Load the new current slide
+        if (canvas) {
+          const slideToLoad = newSlides[newIndex]
+          if (slideToLoad) {
+            canvas.clear()
+            canvas.backgroundColor = slideToLoad.backgroundColor
+            slideToLoad.objects.forEach((obj) => canvas.add(obj))
+            canvas.renderAll()
+          }
+        }
       },
 
       addText: () => {
         const { canvas } = get()
         if (!canvas) return
 
+        get().saveHistory()
+
         const text = new fabric.IText('Dein Text hier', {
-          left: CANVAS_WIDTH / 2 - 100,
-          top: CANVAS_HEIGHT / 2 - 20,
+          left: CANVAS_WIDTH / 2 - 150,
+          top: CANVAS_HEIGHT / 2 - 30,
           fontSize: 48,
           fontFamily: 'Inter',
           fill: '#000000',
+          fontWeight: 'normal',
         })
 
         canvas.add(text)
         canvas.setActiveObject(text)
         canvas.renderAll()
+        get().saveCurrentSlide()
       },
 
       addShape: (type: 'rect' | 'circle') => {
         const { canvas } = get()
         if (!canvas) return
+
+        get().saveHistory()
 
         let shape: fabric.FabricObject
 
@@ -178,22 +273,82 @@ export const useEditorStore = create<EditorState>()(
         canvas.add(shape)
         canvas.setActiveObject(shape)
         canvas.renderAll()
+        get().saveCurrentSlide()
       },
 
-      addImage: async (url: string) => {
+      addImage: async (file: File) => {
         const { canvas } = get()
         if (!canvas) return
 
-        const img = await fabric.FabricImage.fromURL(url)
-        img.scaleToWidth(CANVAS_WIDTH * 0.8)
+        get().saveHistory()
+
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = async (e) => {
+            try {
+              const dataUrl = e.target?.result as string
+              const img = await fabric.FabricImage.fromURL(dataUrl)
+
+              // Scale to fit canvas width (80%)
+              const maxWidth = CANVAS_WIDTH * 0.8
+              const maxHeight = CANVAS_HEIGHT * 0.8
+
+              if (img.width && img.height) {
+                const scaleX = maxWidth / img.width
+                const scaleY = maxHeight / img.height
+                const scale = Math.min(scaleX, scaleY, 1)
+
+                img.scale(scale)
+              }
+
+              img.set({
+                left: CANVAS_WIDTH / 2 - (img.getScaledWidth() || 0) / 2,
+                top: CANVAS_HEIGHT / 2 - (img.getScaledHeight() || 0) / 2,
+              })
+
+              canvas.add(img)
+              canvas.setActiveObject(img)
+              canvas.renderAll()
+              get().saveCurrentSlide()
+              resolve()
+            } catch (err) {
+              reject(err)
+            }
+          }
+          reader.onerror = reject
+          reader.readAsDataURL(file)
+        })
+      },
+
+      addImageFromUrl: async (url: string) => {
+        const { canvas } = get()
+        if (!canvas) return
+
+        get().saveHistory()
+
+        const img = await fabric.FabricImage.fromURL(url, {
+          crossOrigin: 'anonymous',
+        })
+
+        const maxWidth = CANVAS_WIDTH * 0.8
+        const maxHeight = CANVAS_HEIGHT * 0.8
+
+        if (img.width && img.height) {
+          const scaleX = maxWidth / img.width
+          const scaleY = maxHeight / img.height
+          const scale = Math.min(scaleX, scaleY, 1)
+          img.scale(scale)
+        }
+
         img.set({
-          left: CANVAS_WIDTH / 2 - img.getScaledWidth() / 2,
-          top: CANVAS_HEIGHT / 2 - img.getScaledHeight() / 2,
+          left: CANVAS_WIDTH / 2 - (img.getScaledWidth() || 0) / 2,
+          top: CANVAS_HEIGHT / 2 - (img.getScaledHeight() || 0) / 2,
         })
 
         canvas.add(img)
         canvas.setActiveObject(img)
         canvas.renderAll()
+        get().saveCurrentSlide()
       },
 
       deleteSelected: () => {
@@ -202,45 +357,81 @@ export const useEditorStore = create<EditorState>()(
 
         const activeObjects = canvas.getActiveObjects()
         if (activeObjects.length > 0) {
+          get().saveHistory()
           activeObjects.forEach((obj) => canvas.remove(obj))
           canvas.discardActiveObject()
           canvas.renderAll()
+          get().saveCurrentSlide()
         }
       },
 
+      saveHistory: () => {
+        const { slides, history } = get()
+        set({
+          history: {
+            past: [...history.past.slice(-19), cloneSlides(slides)],
+            future: [],
+          },
+        })
+      },
+
       undo: () => {
-        const { history } = get()
+        const { history, canvas } = get()
         if (history.past.length === 0) return
 
         const newPast = [...history.past]
         const previous = newPast.pop()
 
         if (previous) {
+          const currentSlides = cloneSlides(get().slides)
+
           set({
             slides: previous,
             history: {
               past: newPast,
-              future: [get().slides, ...history.future],
+              future: [currentSlides, ...history.future],
             },
           })
+
+          // Reload current slide on canvas
+          const { currentSlideIndex } = get()
+          const slideToLoad = previous[currentSlideIndex] || previous[0]
+          if (canvas && slideToLoad) {
+            canvas.clear()
+            canvas.backgroundColor = slideToLoad.backgroundColor
+            slideToLoad.objects.forEach((obj) => canvas.add(obj))
+            canvas.renderAll()
+          }
         }
       },
 
       redo: () => {
-        const { history } = get()
+        const { history, canvas } = get()
         if (history.future.length === 0) return
 
         const newFuture = [...history.future]
         const next = newFuture.shift()
 
         if (next) {
+          const currentSlides = cloneSlides(get().slides)
+
           set({
             slides: next,
             history: {
-              past: [...history.past, get().slides],
+              past: [...history.past, currentSlides],
               future: newFuture,
             },
           })
+
+          // Reload current slide on canvas
+          const { currentSlideIndex } = get()
+          const slideToLoad = next[currentSlideIndex] || next[0]
+          if (canvas && slideToLoad) {
+            canvas.clear()
+            canvas.backgroundColor = slideToLoad.backgroundColor
+            slideToLoad.objects.forEach((obj) => canvas.add(obj))
+            canvas.renderAll()
+          }
         }
       },
 
@@ -248,7 +439,6 @@ export const useEditorStore = create<EditorState>()(
         const { canvas, slides, hasWatermark, projectName } = get()
         if (!canvas) return
 
-        // Dynamic import for jsPDF to reduce bundle size
         const { jsPDF } = await import('jspdf')
 
         const pdf = new jsPDF({
@@ -257,10 +447,8 @@ export const useEditorStore = create<EditorState>()(
           format: [CANVAS_WIDTH, CANVAS_HEIGHT],
         })
 
-        // Save current slide first
         get().saveCurrentSlide()
 
-        // Create watermark text object if needed
         let watermarkText: fabric.FabricText | null = null
         if (hasWatermark) {
           watermarkText = new fabric.FabricText('LinkedSel.de', {
@@ -279,7 +467,6 @@ export const useEditorStore = create<EditorState>()(
             pdf.addPage([CANVAS_WIDTH, CANVAS_HEIGHT])
           }
 
-          // Load slide objects to canvas
           canvas.clear()
           canvas.backgroundColor = '#ffffff'
           const slide = slides[i]
@@ -288,14 +475,12 @@ export const useEditorStore = create<EditorState>()(
             slide.objects.forEach((obj) => canvas.add(obj))
           }
 
-          // Add watermark if needed
           if (watermarkText) {
             canvas.add(watermarkText)
           }
 
           canvas.renderAll()
 
-          // Get data URL at full resolution
           const dataUrl = canvas.toDataURL({
             format: 'png',
             multiplier: 1 / DISPLAY_SCALE,
@@ -303,13 +488,11 @@ export const useEditorStore = create<EditorState>()(
 
           pdf.addImage(dataUrl, 'PNG', 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
 
-          // Remove watermark for next iteration
           if (watermarkText) {
             canvas.remove(watermarkText)
           }
         }
 
-        // Restore current slide
         const { currentSlideIndex } = get()
         canvas.clear()
         canvas.backgroundColor = '#ffffff'
@@ -320,7 +503,6 @@ export const useEditorStore = create<EditorState>()(
         }
         canvas.renderAll()
 
-        // Generate filename
         const filename = `${projectName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`
         pdf.save(filename)
       },
@@ -343,7 +525,6 @@ export const useEditorStore = create<EditorState>()(
       loadTemplate: (template: CarouselTemplate) => {
         const { canvas } = get()
 
-        // Convert template slides to editor slides
         const newSlides: Slide[] = template.slides.map((slideTemplate) =>
           convertTemplateSlide(slideTemplate)
         )
@@ -355,7 +536,6 @@ export const useEditorStore = create<EditorState>()(
           history: { past: [], future: [] },
         })
 
-        // Load first slide to canvas
         if (canvas && newSlides[0]) {
           canvas.clear()
           canvas.backgroundColor = newSlides[0].backgroundColor
@@ -372,6 +552,36 @@ export const useEditorStore = create<EditorState>()(
         set({ hasWatermark })
       },
 
+      setBackgroundColor: (color: string) => {
+        const { canvas, slides, currentSlideIndex } = get()
+        if (!canvas) return
+
+        get().saveHistory()
+        canvas.backgroundColor = color
+        canvas.renderAll()
+
+        const updatedSlides = [...slides]
+        const slide = updatedSlides[currentSlideIndex]
+        if (slide) {
+          slide.backgroundColor = color
+        }
+        set({ slides: updatedSlides })
+      },
+
+      updateSelectedObject: (props: Record<string, unknown>) => {
+        const { canvas, selectedObject } = get()
+        if (!canvas || !selectedObject) return
+
+        get().saveHistory()
+        selectedObject.set(props)
+        canvas.renderAll()
+        get().saveCurrentSlide()
+      },
+
+      setSelectedObject: (obj: fabric.FabricObject | null) => {
+        set({ selectedObject: obj })
+      },
+
       reset: () => {
         const { canvas } = get()
         const emptySlide = createEmptySlide()
@@ -382,6 +592,7 @@ export const useEditorStore = create<EditorState>()(
           history: { past: [], future: [] },
           projectName: 'Neues Carousel',
           hasWatermark: true,
+          selectedObject: null,
         })
 
         if (canvas) {
@@ -395,7 +606,6 @@ export const useEditorStore = create<EditorState>()(
   )
 )
 
-// Helper function to convert template slide to editor slide
 function convertTemplateSlide(slideTemplate: SlideTemplate): Slide {
   const objects: fabric.FabricObject[] = []
 
