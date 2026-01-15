@@ -4,29 +4,20 @@ import { nanoid } from 'nanoid'
 import { useSearchParams } from 'next/navigation'
 import { Suspense, useCallback, useEffect, useState } from 'react'
 
+import { AIGenerationOverlay } from '@/components/editor/ai-generation-overlay'
 import { AIPanel } from '@/components/editor/ai-panel'
 import { KonvaCanvas } from '@/components/editor/konva-canvas'
 import { PropertiesPanel } from '@/components/editor/properties-panel'
 import { EditorSidebar } from '@/components/editor/sidebar'
 import { EditorToolbar } from '@/components/editor/toolbar'
+import { type AIGenerationOptions, useAIGeneration } from '@/hooks/use-ai-generation'
 import { useToast } from '@/hooks/use-toast'
 import { getTemplateById } from '@/lib/templates/default-templates'
 import { useCanvasStore } from '@/stores/canvas-store'
 import { useHistoryStore } from '@/stores/history-store'
 import { useProjectStore } from '@/stores/project-store'
 import { useSelectionStore } from '@/stores/selection-store'
-import {
-  createTextElement,
-  type Slide,
-  type TextElement,
-  useSlidesStore,
-} from '@/stores/slides-store'
-
-interface GeneratedSlide {
-  headline: string
-  body: string
-  callToAction?: string
-}
+import { createTextElement, type Slide, useSlidesStore } from '@/stores/slides-store'
 
 function EditorContent() {
   const searchParams = useSearchParams()
@@ -35,13 +26,16 @@ function EditorContent() {
 
   const { reset: resetProject } = useProjectStore()
   const { setSlides, reset: resetSlides } = useSlidesStore()
-  const { getDimensions, reset: resetCanvas } = useCanvasStore()
+  const { reset: resetCanvas } = useCanvasStore()
   const { reset: resetSelection } = useSelectionStore()
   const { reset: resetHistory } = useHistoryStore()
 
   const [isLoading, setIsLoading] = useState(!!projectId)
   const [isAIPanelOpen, setIsAIPanelOpen] = useState(false)
   const { toast } = useToast()
+
+  // AI Generation hook
+  const { state: aiState, generate: generateAI, cancel: cancelAI } = useAIGeneration()
 
   // Load template and convert to new format
   const loadTemplateToSlides = useCallback(
@@ -177,85 +171,17 @@ function EditorContent() {
     )
   }
 
-  const handleApplyAIContent = (aiSlides: GeneratedSlide[]) => {
-    const { width, height } = getDimensions()
+  // Handler for streaming AI generation
+  const handleStartAIGeneration = async (options: AIGenerationOptions) => {
+    setIsAIPanelOpen(false) // Close panel, overlay takes over
+    await generateAI(options)
 
-    const newSlides: Slide[] = aiSlides.map((aiSlide, index) => {
-      const elements: TextElement[] = []
-
-      // Headline
-      elements.push(
-        createTextElement({
-          x: 60,
-          y: index === 0 ? 120 : 80,
-          width: width - 120,
-          height: 80,
-          text: aiSlide.headline,
-          fontSize: index === 0 ? 64 : 56,
-          fontWeight: 'bold',
-          fill: '#1a1a1a',
-        })
-      )
-
-      // Body
-      elements.push(
-        createTextElement({
-          x: 60,
-          y: index === 0 ? 250 : 200,
-          width: width - 120,
-          height: 200,
-          text: aiSlide.body,
-          fontSize: 32,
-          fontWeight: 'normal',
-          fill: '#4a4a4a',
-        })
-      )
-
-      // Call to Action
-      if (aiSlide.callToAction && index === aiSlides.length - 1) {
-        elements.push(
-          createTextElement({
-            x: 60,
-            y: height - 200,
-            width: width - 120,
-            height: 50,
-            text: aiSlide.callToAction,
-            fontSize: 36,
-            fontWeight: 'bold',
-            fill: '#7c3aed',
-          })
-        )
-      }
-
-      // Slide number
-      elements.push(
-        createTextElement({
-          x: width - 100,
-          y: height - 80,
-          width: 80,
-          height: 30,
-          text: `${index + 1}/${aiSlides.length}`,
-          fontSize: 24,
-          fontWeight: 'normal',
-          fill: '#9ca3af',
-        })
-      )
-
-      return {
-        id: nanoid(),
-        backgroundColor: '#ffffff',
-        elements,
-      }
-    })
-
-    useHistoryStore.getState().pushState(useSlidesStore.getState().slides)
-    setSlides(newSlides)
-    useProjectStore.getState().markDirty()
-
-    toast({
-      title: 'AI Content applied',
-      description: `${aiSlides.length} slides have been created.`,
-    })
+    if (!aiState.error) {
+      toast({
+        title: 'AI Generation complete',
+        description: `Created ${aiState.totalSlides} slides`,
+      })
+    }
   }
 
   return (
@@ -269,15 +195,25 @@ function EditorContent() {
         {/* Canvas - full area behind sidebars */}
         <div className="absolute inset-0 pt-[105px]">
           <KonvaCanvas />
+          {/* AI Generation Overlay - shows on canvas during generation */}
+          <AIGenerationOverlay state={aiState} onCancel={cancelAI} />
         </div>
 
-        {/* Left Sidebar - overlay */}
-        <div className="absolute bottom-3 left-3 top-[112px] z-10">
+        {/* Left Sidebar - overlay (disabled during AI generation) */}
+        <div
+          className={`absolute bottom-3 left-3 top-[112px] z-10 ${
+            aiState.isGenerating ? 'pointer-events-none opacity-50' : ''
+          }`}
+        >
           <EditorSidebar />
         </div>
 
-        {/* Right Sidebar - overlay */}
-        <div className="absolute right-3 top-[112px] z-10">
+        {/* Right Sidebar - overlay (disabled during AI generation) */}
+        <div
+          className={`absolute right-3 top-[112px] z-10 ${
+            aiState.isGenerating ? 'pointer-events-none opacity-50' : ''
+          }`}
+        >
           <PropertiesPanel />
         </div>
       </div>
@@ -285,7 +221,8 @@ function EditorContent() {
       <AIPanel
         isOpen={isAIPanelOpen}
         onClose={() => setIsAIPanelOpen(false)}
-        onApply={handleApplyAIContent}
+        onGenerate={handleStartAIGeneration}
+        isGenerating={aiState.isGenerating}
       />
     </>
   )

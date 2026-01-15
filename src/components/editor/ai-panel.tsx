@@ -1,27 +1,20 @@
 'use client'
 
-import { Loader2, Sparkles, X } from 'lucide-react'
-import { useState } from 'react'
+import { Sparkles, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
+import type { AIGenerationOptions } from '@/hooks/use-ai-generation'
 import { useSubscription } from '@/hooks/use-subscription'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
-
-interface GeneratedSlide {
-  headline: string
-  body: string
-  callToAction?: string
-}
-
-interface AIGenerationResult {
-  slides: GeneratedSlide[]
-}
+import type { BrandKit } from '@/types/brand-kit'
 
 interface AIPanelProps {
   isOpen: boolean
   onClose: () => void
-  onApply: (slides: GeneratedSlide[]) => void
+  onGenerate: (options: AIGenerationOptions) => void
+  isGenerating: boolean
 }
 
 const STYLES = [
@@ -48,73 +41,57 @@ const LANGUAGES = [
   { id: 'en', label: 'English' },
 ] as const
 
-const PROVIDERS = [
-  { id: 'openai', label: 'OpenAI (GPT-4)' },
-  { id: 'anthropic', label: 'Anthropic (Claude)' },
-] as const
-
-export function AIPanel({ isOpen, onClose, onApply }: AIPanelProps) {
+export function AIPanel({ isOpen, onClose, onGenerate, isGenerating }: AIPanelProps) {
   const [topic, setTopic] = useState('')
   const [style, setStyle] = useState<(typeof STYLES)[number]['id']>('professional')
   const [slideCount, setSlideCount] = useState(5)
   const [language, setLanguage] = useState<'de' | 'en'>('de')
-  const [provider, setProvider] = useState<'openai' | 'anthropic'>('openai')
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [result, setResult] = useState<AIGenerationResult | null>(null)
+  const [brandKit, setBrandKit] = useState<BrandKit | null>(null)
+  const [brandKits, setBrandKits] = useState<BrandKit[]>([])
+  const [isLoadingBrandKits, setIsLoadingBrandKits] = useState(false)
 
   const { isPro, isByok, hasSubscription } = useSubscription()
   const { toast } = useToast()
 
   const canUseAI = isPro || isByok
 
-  const handleGenerate = async () => {
+  // Load brand kits when panel opens
+  useEffect(() => {
+    if (isOpen && canUseAI) {
+      setIsLoadingBrandKits(true)
+      fetch('/api/brand-kits')
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data)) {
+            setBrandKits(data)
+            // Auto-select first brand kit if available
+            if (data.length > 0 && !brandKit) {
+              setBrandKit(data[0])
+            }
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to load brand kits:', err)
+        })
+        .finally(() => {
+          setIsLoadingBrandKits(false)
+        })
+    }
+  }, [isOpen, canUseAI, brandKit])
+
+  const handleGenerate = () => {
     if (!topic.trim()) {
       toast({ title: 'Bitte gib ein Thema ein', variant: 'destructive' })
       return
     }
 
-    setIsGenerating(true)
-    setResult(null)
-
-    try {
-      const response = await fetch('/api/ai/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          topic,
-          style,
-          slideCount,
-          language,
-          provider,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Generation fehlgeschlagen')
-      }
-
-      setResult(data)
-    } catch (error) {
-      console.error('AI generation error:', error)
-      toast({
-        title: 'Fehler',
-        description: error instanceof Error ? error.message : 'Generation fehlgeschlagen',
-        variant: 'destructive',
-      })
-    } finally {
-      setIsGenerating(false)
-    }
-  }
-
-  const handleApply = () => {
-    if (result?.slides) {
-      onApply(result.slides)
-      onClose()
-      setResult(null)
-      setTopic('')
-    }
+    onGenerate({
+      topic,
+      style,
+      slideCount,
+      language,
+      brandKit,
+    })
   }
 
   if (!isOpen) return null
@@ -126,9 +103,9 @@ export function AIPanel({ isOpen, onClose, onApply }: AIPanelProps) {
         <div className="sticky top-0 flex items-center justify-between border-b bg-white px-6 py-4">
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-purple-600" />
-            <h2 className="text-lg font-semibold">AI Content Generator</h2>
+            <h2 className="text-lg font-semibold">AI Carousel Generator</h2>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <Button variant="ghost" size="icon" onClick={onClose} disabled={isGenerating}>
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -166,6 +143,7 @@ export function AIPanel({ isOpen, onClose, onApply }: AIPanelProps) {
                   placeholder="z.B. 5 Tipps für besseres Zeitmanagement, Die Zukunft von AI im Marketing, Warum Remote Work produktiver macht..."
                   className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500 focus:outline-none"
                   rows={3}
+                  disabled={isGenerating}
                 />
               </div>
 
@@ -177,11 +155,13 @@ export function AIPanel({ isOpen, onClose, onApply }: AIPanelProps) {
                     <button
                       key={s.id}
                       onClick={() => setStyle(s.id)}
+                      disabled={isGenerating}
                       className={cn(
                         'rounded-lg border p-3 text-left transition-colors',
                         style === s.id
                           ? 'border-purple-500 bg-purple-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          : 'border-gray-200 hover:border-gray-300',
+                        isGenerating && 'cursor-not-allowed opacity-50'
                       )}
                     >
                       <p className="font-medium text-gray-900">{s.label}</p>
@@ -191,7 +171,7 @@ export function AIPanel({ isOpen, onClose, onApply }: AIPanelProps) {
                 </div>
               </div>
 
-              {/* Slide Count & Language */}
+              {/* Slide Count, Language, Brand Kit */}
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-gray-700">
@@ -200,7 +180,8 @@ export function AIPanel({ isOpen, onClose, onApply }: AIPanelProps) {
                   <select
                     value={slideCount}
                     onChange={(e) => setSlideCount(Number(e.target.value))}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                    disabled={isGenerating}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500 focus:outline-none disabled:opacity-50"
                   >
                     {[3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
                       <option key={n} value={n}>
@@ -215,7 +196,8 @@ export function AIPanel({ isOpen, onClose, onApply }: AIPanelProps) {
                   <select
                     value={language}
                     onChange={(e) => setLanguage(e.target.value as 'de' | 'en')}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                    disabled={isGenerating}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500 focus:outline-none disabled:opacity-50"
                   >
                     {LANGUAGES.map((l) => (
                       <option key={l.id} value={l.id}>
@@ -226,21 +208,52 @@ export function AIPanel({ isOpen, onClose, onApply }: AIPanelProps) {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
-                    AI Provider
-                  </label>
+                  <label className="mb-2 block text-sm font-medium text-gray-700">Brand Kit</label>
                   <select
-                    value={provider}
-                    onChange={(e) => setProvider(e.target.value as 'openai' | 'anthropic')}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                    value={brandKit?.id || ''}
+                    onChange={(e) => {
+                      const selected = brandKits.find((bk) => bk.id === e.target.value)
+                      setBrandKit(selected || null)
+                    }}
+                    disabled={isGenerating || isLoadingBrandKits}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500 focus:outline-none disabled:opacity-50"
                   >
-                    {PROVIDERS.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.label}
+                    <option value="">Kein Brand Kit</option>
+                    {brandKits.map((bk) => (
+                      <option key={bk.id} value={bk.id}>
+                        {bk.name}
                       </option>
                     ))}
                   </select>
                 </div>
+              </div>
+
+              {/* Brand Kit Preview */}
+              {brandKit && (
+                <div className="rounded-lg border bg-gray-50 p-4">
+                  <p className="mb-2 text-xs font-medium text-gray-500">
+                    Brand Kit: {brandKit.name}
+                  </p>
+                  <div className="flex gap-2">
+                    {brandKit.colors.slice(0, 5).map((color) => (
+                      <div
+                        key={color.id}
+                        className="h-6 w-6 rounded border border-gray-200"
+                        style={{ backgroundColor: color.hex }}
+                        title={color.name}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Info Box */}
+              <div className="rounded-lg bg-purple-50 p-4">
+                <p className="text-sm text-purple-800">
+                  <strong>Streaming Generation:</strong> Die AI erstellt dein Carousel direkt auf
+                  dem Canvas. Du siehst jeden Slide in Echtzeit entstehen und kannst jederzeit
+                  abbrechen.
+                </p>
               </div>
 
               {/* Generate Button */}
@@ -249,45 +262,9 @@ export function AIPanel({ isOpen, onClose, onApply }: AIPanelProps) {
                 disabled={isGenerating || !topic.trim()}
                 className="w-full bg-purple-600 hover:bg-purple-700"
               >
-                {isGenerating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generiere...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Content generieren
-                  </>
-                )}
+                <Sparkles className="mr-2 h-4 w-4" />
+                Carousel generieren
               </Button>
-
-              {/* Results */}
-              {result?.slides && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-medium text-gray-900">
-                      Generierter Content ({result.slides.length} Slides)
-                    </h3>
-                    <Button onClick={handleApply}>Auf Carousel anwenden</Button>
-                  </div>
-
-                  <div className="max-h-64 space-y-3 overflow-auto rounded-lg border bg-gray-50 p-4">
-                    {result.slides.map((slide, index) => (
-                      <div key={index} className="rounded-lg border bg-white p-3">
-                        <p className="text-xs font-medium text-purple-600">Slide {index + 1}</p>
-                        <p className="mt-1 font-semibold text-gray-900">{slide.headline}</p>
-                        <p className="mt-1 text-sm text-gray-600">{slide.body}</p>
-                        {slide.callToAction && (
-                          <p className="mt-1 text-sm font-medium text-purple-600">
-                            {slide.callToAction}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>
