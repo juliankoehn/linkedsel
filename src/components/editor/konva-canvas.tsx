@@ -138,6 +138,7 @@ export function KonvaCanvas() {
   // Pan state
   const [isPanning, setIsPanning] = useState(false)
   const [isSpacePressed, setIsSpacePressed] = useState(false)
+  const [containerWidth, setContainerWidth] = useState(0)
 
   // Stores
   const { setStageRef, getDimensions, snapEnabled, setGuidelines, clearGuidelines, zoom, setZoom } =
@@ -173,6 +174,24 @@ export function KonvaCanvas() {
   const currentSlide = slides[currentSlideIndex]
   const { width, height } = getDimensions()
 
+  // Track container width for dynamic padding calculation
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerWidth(entry.contentRect.width)
+      }
+    })
+
+    resizeObserver.observe(container)
+    // Initial measurement
+    setContainerWidth(container.clientWidth)
+
+    return () => resizeObserver.disconnect()
+  }, [])
+
   // Set stage ref in store for the current slide
   useEffect(() => {
     const stageRef = stageRefs.current.get(currentSlideIndex)
@@ -181,18 +200,32 @@ export function KonvaCanvas() {
     }
   }, [currentSlideIndex, setStageRef, slides])
 
-  // Scroll to current slide when it changes
+  // Initial scroll to center on first slide + scroll to current slide when it changes
+  const hasInitializedScroll = useRef(false)
+
   useEffect(() => {
     const container = scrollContainerRef.current
-    if (!container) return
+    if (!container || containerWidth === 0) return
 
     const scaledWidth = width * DISPLAY_SCALE_FACTOR * zoom
-    const slidePosition = currentSlideIndex * (scaledWidth + SLIDE_GAP)
-    const containerWidth = container.clientWidth
+    const minPadding = 80
+    const currentDynamicPadding = Math.max(minPadding, (containerWidth - scaledWidth) / 2 + 40)
+
+    // Calculate the position of the slide within the scrollable content
+    // The padding is part of the scrollable area, so slides start after the padding
+    const slidePosition = currentDynamicPadding + currentSlideIndex * (scaledWidth + SLIDE_GAP)
+
+    // To center the slide: scroll so the slide is in the middle of the viewport
     const scrollTarget = slidePosition - (containerWidth - scaledWidth) / 2
 
-    container.scrollTo({ left: scrollTarget, behavior: 'smooth' })
-  }, [currentSlideIndex, width, zoom])
+    // On first render, scroll instantly. After that, use smooth scrolling
+    if (!hasInitializedScroll.current) {
+      container.scrollTo({ left: Math.max(0, scrollTarget), behavior: 'instant' })
+      hasInitializedScroll.current = true
+    } else {
+      container.scrollTo({ left: Math.max(0, scrollTarget), behavior: 'smooth' })
+    }
+  }, [currentSlideIndex, width, zoom, containerWidth])
 
   // Handle element selection
   const handleSelect = useCallback(
@@ -634,18 +667,30 @@ export function KonvaCanvas() {
     setCurrentSlide,
   ])
 
-  // Wheel handler for zoom and horizontal scroll
+  // Wheel handler for zoom and horizontal scroll - attached to window for capturing
   useEffect(() => {
     const container = scrollContainerRef.current
     if (!container) return
 
     const handleWheel = (e: WheelEvent) => {
+      // Check if the event is within our container
+      const rect = container.getBoundingClientRect()
+      if (
+        e.clientX < rect.left ||
+        e.clientX > rect.right ||
+        e.clientY < rect.top ||
+        e.clientY > rect.bottom
+      ) {
+        return
+      }
+
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
       const ctrlKey = isMac ? e.metaKey : e.ctrlKey
 
       if (ctrlKey) {
         // Zoom with Ctrl/Cmd + wheel
         e.preventDefault()
+        e.stopPropagation()
         const delta = e.deltaY > 0 ? 0.9 : 1.1
         const newZoom = Math.max(0.1, Math.min(3, zoom * delta))
         setZoom(newZoom)
@@ -658,12 +703,16 @@ export function KonvaCanvas() {
       }
     }
 
-    container.addEventListener('wheel', handleWheel, { passive: false })
-    return () => container.removeEventListener('wheel', handleWheel)
+    // Use capture phase to handle events before Konva stages
+    window.addEventListener('wheel', handleWheel, { passive: false, capture: true })
+    return () => window.removeEventListener('wheel', handleWheel, { capture: true })
   }, [zoom, setZoom])
 
-  // Space + drag panning
+  // Space + drag panning - using window events to capture even when over Konva stages
   useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container) return
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space' && !e.repeat && !editingTextId) {
         e.preventDefault()
@@ -679,47 +728,57 @@ export function KonvaCanvas() {
       }
     }
 
+    const handleMouseDown = (e: MouseEvent) => {
+      // Check if the event is within our container
+      const rect = container.getBoundingClientRect()
+      const isInContainer =
+        e.clientX >= rect.left &&
+        e.clientX <= rect.right &&
+        e.clientY >= rect.top &&
+        e.clientY <= rect.bottom
+
+      if (!isInContainer) return
+
+      // Space + left click or middle mouse button
+      if ((isSpacePressed && e.button === 0) || e.button === 1) {
+        e.preventDefault()
+        e.stopPropagation()
+        setIsPanning(true)
+        panStartRef.current = {
+          x: e.clientX,
+          scrollLeft: container.scrollLeft,
+        }
+      }
+    }
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isPanning || !panStartRef.current) return
+      e.preventDefault()
+      const dx = e.clientX - panStartRef.current.x
+      container.scrollLeft = panStartRef.current.scrollLeft - dx
+    }
+
+    const handleMouseUp = () => {
+      if (isPanning) {
+        setIsPanning(false)
+        panStartRef.current = null
+      }
+    }
+
     window.addEventListener('keydown', handleKeyDown)
     window.addEventListener('keyup', handleKeyUp)
+    window.addEventListener('mousedown', handleMouseDown, { capture: true })
+    window.addEventListener('mousemove', handleMouseMove, { capture: true })
+    window.addEventListener('mouseup', handleMouseUp, { capture: true })
+
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
+      window.removeEventListener('mousedown', handleMouseDown, { capture: true })
+      window.removeEventListener('mousemove', handleMouseMove, { capture: true })
+      window.removeEventListener('mouseup', handleMouseUp, { capture: true })
     }
-  }, [editingTextId])
-
-  const handlePanStart = useCallback(
-    (e: React.MouseEvent) => {
-      if (isSpacePressed || e.button === 1) {
-        e.preventDefault()
-        setIsPanning(true)
-        const container = scrollContainerRef.current
-        if (container) {
-          panStartRef.current = {
-            x: e.clientX,
-            scrollLeft: container.scrollLeft,
-          }
-        }
-      }
-    },
-    [isSpacePressed]
-  )
-
-  const handlePanMove = useCallback(
-    (e: React.MouseEvent) => {
-      if (!isPanning || !panStartRef.current) return
-      const container = scrollContainerRef.current
-      if (container) {
-        const dx = e.clientX - panStartRef.current.x
-        container.scrollLeft = panStartRef.current.scrollLeft - dx
-      }
-    },
-    [isPanning]
-  )
-
-  const handlePanEnd = useCallback(() => {
-    setIsPanning(false)
-    panStartRef.current = null
-  }, [])
+  }, [editingTextId, isSpacePressed, isPanning])
 
   // Z-order and context menu callbacks
   const bringToFront = useCallback(() => {
@@ -786,6 +845,11 @@ export function KonvaCanvas() {
   const scaledWidth = width * DISPLAY_SCALE_FACTOR * zoom
   const scaledHeight = height * DISPLAY_SCALE_FACTOR * zoom
 
+  // Calculate dynamic padding to allow centering any slide
+  // Padding should be at least half the viewport width minus half the slide width
+  const minPadding = 80
+  const dynamicPadding = Math.max(minPadding, (containerWidth - scaledWidth) / 2 + 40)
+
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
@@ -794,18 +858,14 @@ export function KonvaCanvas() {
           <div
             ref={scrollContainerRef}
             className={`flex flex-1 items-center gap-0 overflow-x-auto bg-gray-100 ${
-              isSpacePressed || isPanning ? 'cursor-grab' : ''
+              isSpacePressed ? 'cursor-grab' : ''
             } ${isPanning ? 'cursor-grabbing' : ''}`}
             style={{
-              paddingLeft: '80px',
-              paddingRight: '80px',
+              paddingLeft: `${dynamicPadding}px`,
+              paddingRight: `${dynamicPadding}px`,
               paddingTop: `${TOOLBAR_HEIGHT + 20}px`,
               paddingBottom: '80px',
             }}
-            onMouseDown={handlePanStart}
-            onMouseMove={handlePanMove}
-            onMouseUp={handlePanEnd}
-            onMouseLeave={handlePanEnd}
           >
             {slides.map((slide, slideIndex) => {
               const isCurrentSlide = slideIndex === currentSlideIndex
