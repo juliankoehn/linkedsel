@@ -35,7 +35,13 @@
       "Bash(lsof:*)",
       "Bash(pkill:*)",
       "Bash(pnpm next:*)",
-      "mcp__plugin_playwright_playwright__browser_close"
+      "mcp__plugin_playwright_playwright__browser_close",
+      "Bash(npm install:*)",
+      "Bash(npm cache clean:*)",
+      "Bash(ls:*)",
+      "WebFetch(domain:www.yogalayout.dev)",
+      "Bash(find:*)",
+      "Bash(pnpm run build:*)"
     ]
   }
 }

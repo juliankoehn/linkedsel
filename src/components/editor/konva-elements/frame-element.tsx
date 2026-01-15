@@ -4,7 +4,7 @@ import type { KonvaEventObject } from 'konva/lib/Node'
 import { useMemo } from 'react'
 import { Group, Rect } from 'react-konva'
 
-import { calculateFrameLayout } from '@/lib/yoga-layout'
+import { calculateFrameAutoSize, calculateFrameLayout } from '@/lib/yoga-layout'
 import type { CanvasElement, FrameElement as FrameElementType } from '@/stores/slides-store'
 
 import { ElementRenderer } from './index'
@@ -28,8 +28,25 @@ export function FrameElement({
   onDragEnd,
   onTransformEnd,
 }: FrameElementProps) {
+  // Calculate auto-size if enabled
+  const autoSize = useMemo(() => calculateFrameAutoSize(element), [element])
+
+  // Use auto-calculated size or original size
+  const frameWidth = autoSize?.width ?? element.width
+  const frameHeight = autoSize?.height ?? element.height
+
+  // Create frame with potentially auto-sized dimensions for layout calculation
+  const frameForLayout = useMemo(
+    () => ({
+      ...element,
+      width: frameWidth,
+      height: frameHeight,
+    }),
+    [element, frameWidth, frameHeight]
+  )
+
   // Calculate layout positions for children using Yoga WASM engine
-  const layoutResults = useMemo(() => calculateFrameLayout(element), [element])
+  const layoutResults = useMemo(() => calculateFrameLayout(frameForLayout), [frameForLayout])
 
   // Create a map for quick lookup
   const layoutMap = useMemo(() => {
@@ -45,13 +62,16 @@ export function FrameElement({
     return map
   }, [layoutResults])
 
+  // Check if auto-layout is active (children should not be individually draggable)
+  const hasAutoLayout = element.layoutMode !== 'none'
+
   return (
     <Group
       id={element.id}
       x={element.x}
       y={element.y}
-      width={element.width}
-      height={element.height}
+      width={frameWidth}
+      height={frameHeight}
       rotation={element.rotation}
       opacity={element.opacity}
       visible={element.visible}
@@ -66,13 +86,13 @@ export function FrameElement({
       onDragEnd={() => onDragEnd(element.id)}
       // Clip children to frame bounds
       clipFunc={(ctx) => {
-        ctx.rect(0, 0, element.width, element.height)
+        ctx.rect(0, 0, frameWidth, frameHeight)
       }}
     >
       {/* Frame background */}
       <Rect
-        width={element.width}
-        height={element.height}
+        width={frameWidth}
+        height={frameHeight}
         fill={element.fill || undefined}
         stroke={element.stroke}
         strokeWidth={element.strokeWidth || 0}
@@ -82,8 +102,8 @@ export function FrameElement({
       {/* Frame border when selected (dashed) */}
       {isSelected && (
         <Rect
-          width={element.width}
-          height={element.height}
+          width={frameWidth}
+          height={frameHeight}
           stroke="#0066ff"
           strokeWidth={1}
           dash={[4, 4]}
@@ -96,8 +116,9 @@ export function FrameElement({
         const layout = layoutMap.get(child.id)
 
         // Override child position with Yoga-calculated position
+        // Also lock children in auto-layout mode to prevent individual dragging
         const positionedChild =
-          element.layoutMode !== 'none' && layout ? { ...child, x: layout.x, y: layout.y } : child
+          hasAutoLayout && layout ? { ...child, x: layout.x, y: layout.y, locked: true } : child
 
         return (
           <ElementRenderer

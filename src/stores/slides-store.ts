@@ -1170,18 +1170,18 @@ export const createFrameElement = (
       x: child.x - bounds.x,
       y: child.y - bounds.y,
     })),
-    // Auto-layout defaults
-    layoutMode: 'none',
+    // Auto-layout defaults (like Figma)
+    layoutMode: 'horizontal',
     layoutWrap: 'nowrap',
     paddingTop: 0,
     paddingRight: 0,
     paddingBottom: 0,
     paddingLeft: 0,
-    gap: 0,
+    gap: 10,
     alignItems: 'start',
     justifyContent: 'start',
-    autoWidth: false,
-    autoHeight: false,
+    autoWidth: true,
+    autoHeight: true,
     // Visual defaults
     fill: 'transparent',
     cornerRadius: 0,
