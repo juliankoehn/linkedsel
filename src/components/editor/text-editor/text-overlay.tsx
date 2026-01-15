@@ -34,13 +34,24 @@ export function TextOverlay({ stageRef }: TextOverlayProps) {
     [handleBlur]
   )
 
-  // Focus the textarea when editing starts
+  // Auto-resize textarea to fit content
+  const autoResize = useCallback(() => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+    // Reset height to auto to get the correct scrollHeight
+    textarea.style.height = 'auto'
+    textarea.style.height = `${textarea.scrollHeight}px`
+  }, [])
+
+  // Focus the textarea when editing starts and set initial size
   useEffect(() => {
     if (editingTextId && textareaRef.current) {
       textareaRef.current.focus()
       textareaRef.current.select()
+      // Delay to ensure styles are applied
+      requestAnimationFrame(autoResize)
     }
-  }, [editingTextId])
+  }, [editingTextId, autoResize])
 
   if (!editingTextId || !element || element.type !== 'text') {
     return null
@@ -51,21 +62,28 @@ export function TextOverlay({ stageRef }: TextOverlayProps) {
   // Calculate scale (same as Stage uses)
   const scale = DISPLAY_SCALE_FACTOR * zoom
 
+  // Border width for offset calculation
+  const borderWidth = 2
+
   // Position is relative to the canvas wrapper (parent div with position: relative)
-  // since we use position: absolute
-  const x = element.x * scale
-  const y = element.y * scale
+  // Offset by border width so text aligns exactly
+  const x = element.x * scale - borderWidth
+  const y = element.y * scale - borderWidth
+
+  // Use element's lineHeight or Konva's default (1)
+  const lineHeight = element.lineHeight ?? 1
 
   return (
     <textarea
       ref={textareaRef}
       defaultValue={element.text}
+      onChange={autoResize}
       style={{
         position: 'absolute',
         left: x,
         top: y,
-        width: element.width * scale,
-        minHeight: element.height * scale,
+        width: element.width * scale + borderWidth * 2,
+        minHeight: element.fontSize * scale * lineHeight,
         fontSize: element.fontSize * scale,
         fontFamily: element.fontFamily,
         fontWeight: element.fontWeight,
@@ -74,15 +92,16 @@ export function TextOverlay({ stageRef }: TextOverlayProps) {
         color: element.fill,
         transform: `rotate(${element.rotation}deg)`,
         transformOrigin: 'top left',
-        border: '2px solid #0066ff',
+        border: `${borderWidth}px solid #0066ff`,
         outline: 'none',
-        background: 'transparent',
+        background: 'rgba(255, 255, 255, 0.9)',
         resize: 'none',
         overflow: 'hidden',
         padding: 0,
         margin: 0,
-        lineHeight: 1.2,
+        lineHeight: lineHeight,
         zIndex: 1000,
+        boxSizing: 'border-box',
       }}
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
