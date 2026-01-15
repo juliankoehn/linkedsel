@@ -5,6 +5,8 @@ import type { KonvaEventObject } from 'konva/lib/Node'
 import type { CanvasElement } from '@/stores/slides-store'
 
 import { ImageElement } from './image-element'
+import { ArrowElement, LineElement } from './line-element'
+import { PolygonElement, StarElement, TriangleElement } from './polygon-element'
 import { CircleElement, RectElement } from './shape-element'
 import { TextElement } from './text-element'
 
@@ -45,11 +47,21 @@ export function ElementRenderer({
       return <RectElement element={element} {...commonProps} />
     case 'circle':
       return <CircleElement element={element} {...commonProps} />
+    case 'line':
+      return <LineElement element={element} {...commonProps} />
+    case 'arrow':
+      return <ArrowElement element={element} {...commonProps} />
+    case 'triangle':
+      return <TriangleElement element={element} {...commonProps} />
+    case 'star':
+      return <StarElement element={element} {...commonProps} />
+    case 'polygon':
+      return <PolygonElement element={element} {...commonProps} />
+    case 'icon':
+      // TODO: Implement icon rendering
+      return null
     case 'group':
       // TODO: Implement group rendering
-      return null
-    case 'line':
-      // TODO: Implement line rendering
       return null
     default:
       return null
@@ -57,5 +69,7 @@ export function ElementRenderer({
 }
 
 export { ImageElement } from './image-element'
+export { ArrowElement, LineElement } from './line-element'
+export { PolygonElement, StarElement, TriangleElement } from './polygon-element'
 export { CircleElement, RectElement } from './shape-element'
 export { TextElement } from './text-element'

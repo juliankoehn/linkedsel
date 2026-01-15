@@ -30,6 +30,17 @@ export function TextElement({
     return null
   }
 
+  // Build shadow config if enabled
+  const shadowConfig = element.shadow?.enabled
+    ? {
+        shadowColor: element.shadow.color,
+        shadowBlur: element.shadow.blur,
+        shadowOffsetX: element.shadow.offsetX,
+        shadowOffsetY: element.shadow.offsetY,
+        shadowEnabled: true,
+      }
+    : {}
+
   return (
     <Text
       id={element.id}
@@ -48,6 +59,10 @@ export function TextElement({
       rotation={element.rotation}
       visible={element.visible}
       draggable={!element.locked}
+      textDecoration={element.textDecoration || 'none'}
+      lineHeight={element.lineHeight || 1.2}
+      letterSpacing={element.letterSpacing || 0}
+      {...shadowConfig}
       onClick={(e) => onSelect(element.id, e)}
       onTap={(e) => onSelect(element.id, e as unknown as KonvaEventObject<MouseEvent>)}
       onDblClick={() => {

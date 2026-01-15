@@ -3,7 +3,18 @@ import { create } from 'zustand'
 import { devtools, subscribeWithSelector } from 'zustand/middleware'
 
 // Element types
-export type ElementType = 'text' | 'image' | 'rect' | 'circle' | 'line' | 'group'
+export type ElementType =
+  | 'text'
+  | 'image'
+  | 'rect'
+  | 'circle'
+  | 'line'
+  | 'arrow'
+  | 'triangle'
+  | 'star'
+  | 'polygon'
+  | 'icon'
+  | 'group'
 
 export interface BaseElement {
   id: string
@@ -32,6 +43,14 @@ export interface TextElement extends BaseElement {
   strokeWidth?: number
   lineHeight?: number
   letterSpacing?: number
+  textDecoration?: 'none' | 'underline' | 'line-through'
+  shadow?: {
+    enabled: boolean
+    offsetX: number
+    offsetY: number
+    blur: number
+    color: string
+  }
 }
 
 export interface ImageElement extends BaseElement {
@@ -61,9 +80,58 @@ export interface CircleElement extends BaseElement {
 
 export interface LineElement extends BaseElement {
   type: 'line'
-  points: number[]
+  points: number[] // [x1, y1, x2, y2]
   stroke: string
   strokeWidth: number
+  lineCap?: 'butt' | 'round' | 'square'
+  dash?: number[] // e.g., [10, 5] for dashed
+}
+
+export interface ArrowElement extends BaseElement {
+  type: 'arrow'
+  points: number[] // [x1, y1, x2, y2]
+  stroke: string
+  strokeWidth: number
+  pointerLength?: number
+  pointerWidth?: number
+  pointerAtStart?: boolean
+  pointerAtEnd?: boolean
+  lineCap?: 'butt' | 'round' | 'square'
+  dash?: number[]
+  fill?: string // For filled arrows
+}
+
+export interface TriangleElement extends BaseElement {
+  type: 'triangle'
+  fill: string
+  stroke?: string
+  strokeWidth?: number
+}
+
+export interface StarElement extends BaseElement {
+  type: 'star'
+  fill: string
+  stroke?: string
+  strokeWidth?: number
+  numPoints: number // default 5
+  innerRadius: number
+  outerRadius: number
+}
+
+export interface PolygonElement extends BaseElement {
+  type: 'polygon'
+  fill: string
+  stroke?: string
+  strokeWidth?: number
+  sides: number // 5=pentagon, 6=hexagon, etc.
+}
+
+export interface IconElement extends BaseElement {
+  type: 'icon'
+  iconName: string // Lucide icon name
+  fill: string
+  stroke?: string
+  strokeWidth?: number
 }
 
 export interface GroupElement extends BaseElement {
@@ -77,6 +145,11 @@ export type CanvasElement =
   | RectElement
   | CircleElement
   | LineElement
+  | ArrowElement
+  | TriangleElement
+  | StarElement
+  | PolygonElement
+  | IconElement
   | GroupElement
 
 export interface Slide {
@@ -463,5 +536,117 @@ export const createImageElement = (
   visible: true,
   locked: false,
   src,
+  ...overrides,
+})
+
+export const createLineElement = (overrides: Partial<LineElement> = {}): LineElement => ({
+  id: nanoid(),
+  type: 'line',
+  x: 100,
+  y: 100,
+  width: 200,
+  height: 0,
+  rotation: 0,
+  opacity: 1,
+  visible: true,
+  locked: false,
+  points: [0, 0, 200, 0],
+  stroke: '#000000',
+  strokeWidth: 2,
+  lineCap: 'round',
+  ...overrides,
+})
+
+export const createArrowElement = (overrides: Partial<ArrowElement> = {}): ArrowElement => ({
+  id: nanoid(),
+  type: 'arrow',
+  x: 100,
+  y: 100,
+  width: 200,
+  height: 0,
+  rotation: 0,
+  opacity: 1,
+  visible: true,
+  locked: false,
+  points: [0, 0, 200, 0],
+  stroke: '#000000',
+  strokeWidth: 2,
+  pointerLength: 15,
+  pointerWidth: 15,
+  pointerAtEnd: true,
+  lineCap: 'round',
+  ...overrides,
+})
+
+export const createTriangleElement = (
+  overrides: Partial<TriangleElement> = {}
+): TriangleElement => ({
+  id: nanoid(),
+  type: 'triangle',
+  x: 100,
+  y: 100,
+  width: 100,
+  height: 100,
+  rotation: 0,
+  opacity: 1,
+  visible: true,
+  locked: false,
+  fill: '#3b82f6',
+  ...overrides,
+})
+
+export const createStarElement = (overrides: Partial<StarElement> = {}): StarElement => ({
+  id: nanoid(),
+  type: 'star',
+  x: 100,
+  y: 100,
+  width: 100,
+  height: 100,
+  rotation: 0,
+  opacity: 1,
+  visible: true,
+  locked: false,
+  fill: '#f59e0b',
+  numPoints: 5,
+  innerRadius: 25,
+  outerRadius: 50,
+  ...overrides,
+})
+
+export const createPolygonElement = (
+  sides: number = 6,
+  overrides: Partial<PolygonElement> = {}
+): PolygonElement => ({
+  id: nanoid(),
+  type: 'polygon',
+  x: 100,
+  y: 100,
+  width: 100,
+  height: 100,
+  rotation: 0,
+  opacity: 1,
+  visible: true,
+  locked: false,
+  fill: '#8b5cf6',
+  sides,
+  ...overrides,
+})
+
+export const createIconElement = (
+  iconName: string,
+  overrides: Partial<IconElement> = {}
+): IconElement => ({
+  id: nanoid(),
+  type: 'icon',
+  x: 100,
+  y: 100,
+  width: 48,
+  height: 48,
+  rotation: 0,
+  opacity: 1,
+  visible: true,
+  locked: false,
+  iconName,
+  fill: '#000000',
   ...overrides,
 })

@@ -3,26 +3,40 @@
 import {
   Bold,
   Check,
+  ChevronDown,
   Circle,
   Download,
+  Hexagon,
   Image as ImageIcon,
   Italic,
   Loader2,
   Minus,
+  MoveRight,
   Palette,
   Pencil,
+  Pentagon,
   Plus,
   Redo,
   Save,
   Sparkles,
   Square,
+  Star,
+  Strikethrough,
   Trash2,
+  Triangle,
   Type,
+  Underline,
   Undo,
 } from 'lucide-react'
 import { useRef, useState } from 'react'
-
+import { ColorButton } from '@/components/editor/color-picker'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { useExport } from '@/hooks/use-export'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -31,10 +45,15 @@ import { useHistoryStore } from '@/stores/history-store'
 import { useProjectStore } from '@/stores/project-store'
 import { useSelectionStore } from '@/stores/selection-store'
 import {
+  createArrowElement,
   createCircleElement,
   createImageElement,
+  createLineElement,
+  createPolygonElement,
   createRectElement,
+  createStarElement,
   createTextElement,
+  createTriangleElement,
   type TextElement,
   useSlidesStore,
 } from '@/stores/slides-store'
@@ -85,23 +104,71 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
   }
 
   // Add shape element
-  const addShape = (type: 'rect' | 'circle') => {
+  const addShape = (
+    type: 'rect' | 'circle' | 'line' | 'arrow' | 'triangle' | 'star' | 'polygon',
+    sides?: number
+  ) => {
     pushState(slides)
-    const element =
-      type === 'rect'
-        ? createRectElement({
-            x: width / 2 - 100,
-            y: height / 2 - 100,
-            width: 200,
-            height: 200,
-          })
-        : createCircleElement({
-            x: width / 2 - 100,
-            y: height / 2 - 100,
-            width: 200,
-            height: 200,
-            radius: 100,
-          })
+    let element
+    switch (type) {
+      case 'rect':
+        element = createRectElement({
+          x: width / 2 - 100,
+          y: height / 2 - 100,
+          width: 200,
+          height: 200,
+        })
+        break
+      case 'circle':
+        element = createCircleElement({
+          x: width / 2 - 100,
+          y: height / 2 - 100,
+          width: 200,
+          height: 200,
+          radius: 100,
+        })
+        break
+      case 'line':
+        element = createLineElement({
+          x: width / 2 - 100,
+          y: height / 2,
+          points: [0, 0, 200, 0],
+        })
+        break
+      case 'arrow':
+        element = createArrowElement({
+          x: width / 2 - 100,
+          y: height / 2,
+          points: [0, 0, 200, 0],
+        })
+        break
+      case 'triangle':
+        element = createTriangleElement({
+          x: width / 2 - 50,
+          y: height / 2 - 50,
+          width: 100,
+          height: 100,
+        })
+        break
+      case 'star':
+        element = createStarElement({
+          x: width / 2 - 50,
+          y: height / 2 - 50,
+          width: 100,
+          height: 100,
+        })
+        break
+      case 'polygon':
+        element = createPolygonElement(sides || 6, {
+          x: width / 2 - 50,
+          y: height / 2 - 50,
+          width: 100,
+          height: 100,
+        })
+        break
+      default:
+        return
+    }
     addElement(element)
     useSelectionStore.getState().select(element.id)
     useProjectStore.getState().markDirty()
@@ -213,6 +280,7 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
   const fontSize = textElement?.fontSize || 48
   const fontWeight = textElement?.fontWeight || 'normal'
   const fontStyle = textElement?.fontStyle || 'normal'
+  const textDecoration = textElement?.textDecoration || 'none'
 
   const handleFillChange = (color: string) => {
     if (selectedElement) {
@@ -246,6 +314,26 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
       pushState(slides)
       updateElement(textElement.id, {
         fontStyle: fontStyle === 'italic' ? 'normal' : 'italic',
+      })
+      useProjectStore.getState().markDirty()
+    }
+  }
+
+  const toggleUnderline = () => {
+    if (textElement) {
+      pushState(slides)
+      updateElement(textElement.id, {
+        textDecoration: textDecoration === 'underline' ? 'none' : 'underline',
+      })
+      useProjectStore.getState().markDirty()
+    }
+  }
+
+  const toggleStrikethrough = () => {
+    if (textElement) {
+      pushState(slides)
+      updateElement(textElement.id, {
+        textDecoration: textDecoration === 'line-through' ? 'none' : 'line-through',
       })
       useProjectStore.getState().markDirty()
     }
@@ -342,6 +430,10 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
           <Button variant="ghost" size="icon" onClick={handleImageUpload} title="Upload image">
             <ImageIcon className="h-4 w-4" />
           </Button>
+
+          <div className="mx-1 h-6 w-px bg-gray-200" />
+
+          {/* Basic Shapes */}
           <Button variant="ghost" size="icon" onClick={() => addShape('rect')} title="Rectangle">
             <Square className="h-4 w-4" />
           </Button>
@@ -349,15 +441,51 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
             <Circle className="h-4 w-4" />
           </Button>
 
+          {/* More Shapes Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="gap-1 px-2" title="More shapes">
+                <Triangle className="h-4 w-4" />
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={() => addShape('triangle')}>
+                <Triangle className="mr-2 h-4 w-4" />
+                Triangle
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => addShape('star')}>
+                <Star className="mr-2 h-4 w-4" />
+                Star
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => addShape('polygon', 5)}>
+                <Pentagon className="mr-2 h-4 w-4" />
+                Pentagon
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => addShape('polygon', 6)}>
+                <Hexagon className="mr-2 h-4 w-4" />
+                Hexagon
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <div className="mx-1 h-6 w-px bg-gray-200" />
+
+          {/* Lines & Arrows */}
+          <Button variant="ghost" size="icon" onClick={() => addShape('line')} title="Line">
+            <Minus className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => addShape('arrow')} title="Arrow">
+            <MoveRight className="h-4 w-4" />
+          </Button>
+
           <div className="mx-2 h-6 w-px bg-gray-200" />
 
           <div className="flex items-center gap-1" title="Background color">
             <Palette className="text-muted-foreground h-4 w-4" />
-            <input
-              type="color"
+            <ColorButton
               value={currentSlide?.backgroundColor || '#ffffff'}
-              onChange={(e) => handleBackgroundChange(e.target.value)}
-              className="h-7 w-7 cursor-pointer rounded border border-gray-200 p-0.5"
+              onChange={handleBackgroundChange}
             />
           </div>
 
@@ -367,12 +495,7 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
 
               <div className="flex items-center gap-1" title="Fill color">
                 <span className="text-muted-foreground text-xs">Color:</span>
-                <input
-                  type="color"
-                  value={fill}
-                  onChange={(e) => handleFillChange(e.target.value)}
-                  className="h-7 w-7 cursor-pointer rounded border border-gray-200 p-0.5"
-                />
+                <ColorButton value={fill} onChange={handleFillChange} />
               </div>
 
               {isTextElement && (
@@ -420,6 +543,24 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
                     title="Italic"
                   >
                     <Italic className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn('h-7 w-7', textDecoration === 'underline' && 'bg-accent')}
+                    onClick={toggleUnderline}
+                    title="Underline"
+                  >
+                    <Underline className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn('h-7 w-7', textDecoration === 'line-through' && 'bg-accent')}
+                    onClick={toggleStrikethrough}
+                    title="Strikethrough"
+                  >
+                    <Strikethrough className="h-3 w-3" />
                   </Button>
                 </>
               )}
