@@ -833,11 +833,11 @@ export function KonvaCanvas() {
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
         >
-          {/* Infinite canvas content - transformed */}
+          {/* Infinite canvas content - transformed with zoom */}
           <div
             className="absolute"
             style={{
-              transform: `translate(${panX}px, ${panY}px)`,
+              transform: `translate(${panX}px, ${panY}px) scale(${zoom})`,
               transformOrigin: '0 0',
             }}
           >
@@ -853,8 +853,6 @@ export function KonvaCanvas() {
                     className="relative flex-shrink-0"
                     style={{
                       marginRight: slideIndex < slides.length - 1 ? SLIDE_GAP : 0,
-                      transform: `scale(${zoom})`,
-                      transformOrigin: '0 0',
                     }}
                   >
                     {/* Per-slide toolbar */}
@@ -967,21 +965,17 @@ export function KonvaCanvas() {
               })}
 
               {/* Add slide button */}
-              <div
+              <button
+                onClick={handleAddSlide}
+                className="flex flex-shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-gray-300 text-gray-400 transition-colors hover:border-gray-400 hover:bg-gray-50 hover:text-gray-500"
                 style={{
-                  transform: `scale(${zoom})`,
-                  transformOrigin: '0 0',
+                  width: scaledWidth,
+                  height: scaledHeight,
                   marginLeft: slides.length > 0 ? SLIDE_GAP : 0,
                 }}
               >
-                <button
-                  onClick={handleAddSlide}
-                  className="flex items-center justify-center rounded-lg border-2 border-dashed border-gray-300 text-gray-400 transition-colors hover:border-gray-400 hover:bg-gray-50 hover:text-gray-500"
-                  style={{ width: scaledWidth, height: scaledHeight }}
-                >
-                  <Plus className="h-12 w-12" />
-                </button>
-              </div>
+                <Plus className="h-12 w-12" />
+              </button>
             </div>
           </div>
 
