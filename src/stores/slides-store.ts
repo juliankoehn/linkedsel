@@ -238,6 +238,8 @@ interface SlidesActions {
   ungroupElement: (id: string) => void
   createFrameFromElements: (ids: string[]) => string | null
   updateFrameLayout: (id: string) => void
+  moveElementToParent: (elementId: string, targetParentId: string | null) => void
+  renameElement: (id: string, name: string) => void
 
   // Helpers
   getElementById: (id: string) => CanvasElement | undefined
@@ -255,6 +257,101 @@ const createEmptySlide = (): Slide => ({
   backgroundColor: '#ffffff',
   elements: [],
 })
+
+// Helper: Recursively update an element by id
+const updateElementRecursive = (
+  elements: CanvasElement[],
+  id: string,
+  updates: Partial<CanvasElement>
+): CanvasElement[] => {
+  return elements.map((el) => {
+    if (el.id === id) {
+      return { ...el, ...updates } as CanvasElement
+    }
+    if (el.type === 'group' || el.type === 'frame') {
+      const container = el as GroupElement | FrameElement
+      return {
+        ...container,
+        children: updateElementRecursive(container.children, id, updates),
+      } as CanvasElement
+    }
+    return el
+  })
+}
+
+// Helper: Find element by id recursively
+const findElementRecursive = (elements: CanvasElement[], id: string): CanvasElement | undefined => {
+  for (const el of elements) {
+    if (el.id === id) return el
+    if (el.type === 'group' || el.type === 'frame') {
+      const container = el as GroupElement | FrameElement
+      const found = findElementRecursive(container.children, id)
+      if (found) return found
+    }
+  }
+  return undefined
+}
+
+// Helper: Remove element from tree and return [newElements, removedElement]
+const removeElementRecursive = (
+  elements: CanvasElement[],
+  id: string
+): [CanvasElement[], CanvasElement | null] => {
+  let removed: CanvasElement | null = null
+
+  const newElements = elements.filter((el) => {
+    if (el.id === id) {
+      removed = el
+      return false
+    }
+    return true
+  })
+
+  if (removed) return [newElements, removed]
+
+  // Check in children
+  return [
+    newElements.map((el) => {
+      if (el.type === 'group' || el.type === 'frame') {
+        const container = el as GroupElement | FrameElement
+        const [newChildren, foundRemoved] = removeElementRecursive(container.children, id)
+        if (foundRemoved) removed = foundRemoved
+        return { ...container, children: newChildren } as CanvasElement
+      }
+      return el
+    }),
+    removed,
+  ]
+}
+
+// Helper: Add element to parent (or root if parentId is null)
+const addElementToParent = (
+  elements: CanvasElement[],
+  element: CanvasElement,
+  parentId: string | null
+): CanvasElement[] => {
+  if (!parentId) {
+    return [...elements, element]
+  }
+
+  return elements.map((el) => {
+    if (el.id === parentId && (el.type === 'group' || el.type === 'frame')) {
+      const container = el as GroupElement | FrameElement
+      return {
+        ...container,
+        children: [...container.children, element],
+      } as CanvasElement
+    }
+    if (el.type === 'group' || el.type === 'frame') {
+      const container = el as GroupElement | FrameElement
+      return {
+        ...container,
+        children: addElementToParent(container.children, element, parentId),
+      } as CanvasElement
+    }
+    return el
+  })
+}
 
 const initialState: SlidesState = {
   slides: [createEmptySlide()],
@@ -352,9 +449,7 @@ export const useSlidesStore = create<SlidesStore>()(
           const newSlides = [...state.slides]
           const currentSlide = newSlides[state.currentSlideIndex]
           if (currentSlide) {
-            currentSlide.elements = currentSlide.elements.map((el) =>
-              el.id === id ? ({ ...el, ...updates } as CanvasElement) : el
-            )
+            currentSlide.elements = updateElementRecursive(currentSlide.elements, id, updates)
           }
           return { slides: newSlides }
         })
@@ -769,6 +864,41 @@ export const useSlidesStore = create<SlidesStore>()(
           }
 
           currentSlide.elements[frameIndex] = { ...typedFrame, children }
+          return { slides: newSlides }
+        })
+      },
+
+      moveElementToParent: (elementId, targetParentId) => {
+        set((state) => {
+          const newSlides = [...state.slides]
+          const currentSlide = newSlides[state.currentSlideIndex]
+          if (!currentSlide) return { slides: newSlides }
+
+          // Remove element from its current position
+          const [elementsAfterRemoval, removedElement] = removeElementRecursive(
+            currentSlide.elements,
+            elementId
+          )
+          if (!removedElement) return { slides: newSlides }
+
+          // Add element to new parent (or root if null)
+          currentSlide.elements = addElementToParent(
+            elementsAfterRemoval,
+            removedElement,
+            targetParentId
+          )
+
+          return { slides: newSlides }
+        })
+      },
+
+      renameElement: (id, name) => {
+        set((state) => {
+          const newSlides = [...state.slides]
+          const currentSlide = newSlides[state.currentSlideIndex]
+          if (currentSlide) {
+            currentSlide.elements = updateElementRecursive(currentSlide.elements, id, { name })
+          }
           return { slides: newSlides }
         })
       },

@@ -17,8 +17,9 @@ import {
   Type,
   Unlock,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
+import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { useHistoryStore } from '@/stores/history-store'
 import { useProjectStore } from '@/stores/project-store'
@@ -97,24 +98,35 @@ function getElementName(element: CanvasElement): string {
 interface LayerItemProps {
   element: CanvasElement
   depth: number
+  onDragStart: (elementId: string) => void
+  onDragEnd: () => void
+  onDrop: (targetId: string | null) => void
+  draggedId: string | null
 }
 
-function LayerItem({ element, depth }: LayerItemProps) {
+function LayerItem({ element, depth, onDragStart, onDragEnd, onDrop, draggedId }: LayerItemProps) {
   const [isExpanded, setIsExpanded] = useState(true)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editName, setEditName] = useState('')
+  const [isDragOver, setIsDragOver] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
   const { selectedIds, select, toggleSelection } = useSelectionStore()
-  const { updateElement, slides } = useSlidesStore()
+  const { updateElement, renameElement, slides } = useSlidesStore()
   const { pushState } = useHistoryStore()
   const { markDirty } = useProjectStore()
 
   const isSelected = selectedIds.includes(element.id)
   const hasChildren = element.type === 'group' || element.type === 'frame'
   const children = hasChildren ? (element as GroupElement | FrameElement).children : []
+  const canAcceptDrop = hasChildren && draggedId && draggedId !== element.id
 
   const Icon = getElementIcon(element.type)
   const name = getElementName(element)
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation()
+    if (isEditing) return
     if (e.shiftKey || e.metaKey || e.ctrlKey) {
       toggleSelection(element.id)
     } else {
@@ -124,8 +136,26 @@ function LayerItem({ element, depth }: LayerItemProps) {
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (hasChildren) {
-      setIsExpanded(!isExpanded)
+    // Start editing name
+    setEditName(element.name || getElementName(element))
+    setIsEditing(true)
+    setTimeout(() => inputRef.current?.select(), 0)
+  }
+
+  const handleRenameSubmit = () => {
+    if (editName.trim() && editName !== element.name) {
+      pushState(slides)
+      renameElement(element.id, editName.trim())
+      markDirty()
+    }
+    setIsEditing(false)
+  }
+
+  const handleRenameKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleRenameSubmit()
+    } else if (e.key === 'Escape') {
+      setIsEditing(false)
     }
   }
 
@@ -143,13 +173,57 @@ function LayerItem({ element, depth }: LayerItemProps) {
     markDirty()
   }
 
+  const handleDragStart = (e: React.DragEvent) => {
+    e.stopPropagation()
+    e.dataTransfer.effectAllowed = 'move'
+    onDragStart(element.id)
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (!canAcceptDrop) return
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.stopPropagation()
+    setIsDragOver(false)
+  }
+
+  const handleDropOnFrame = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+    if (canAcceptDrop) {
+      onDrop(element.id)
+    }
+  }
+
+  const handleDragEnd = () => {
+    onDragEnd()
+  }
+
+  const toggleExpand = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setIsExpanded(!isExpanded)
+  }
+
   return (
     <div>
       <div
+        draggable={!isEditing}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDropOnFrame}
         className={cn(
           'group flex h-7 cursor-pointer items-center gap-1 rounded px-1 text-xs transition-colors',
           isSelected ? 'bg-blue-100 text-blue-800' : 'hover:bg-gray-100',
-          !element.visible && 'opacity-50'
+          !element.visible && 'opacity-50',
+          isDragOver && canAcceptDrop && 'bg-blue-200 ring-2 ring-blue-400',
+          draggedId === element.id && 'opacity-30'
         )}
         style={{ paddingLeft: `${depth * 12 + 4}px` }}
         onClick={handleClick}
@@ -157,13 +231,7 @@ function LayerItem({ element, depth }: LayerItemProps) {
       >
         {/* Expand/collapse for groups/frames */}
         {hasChildren ? (
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              setIsExpanded(!isExpanded)
-            }}
-            className="flex h-4 w-4 items-center justify-center"
-          >
+          <button onClick={toggleExpand} className="flex h-4 w-4 items-center justify-center">
             {isExpanded ? (
               <ChevronDown className="h-3 w-3" />
             ) : (
@@ -177,33 +245,55 @@ function LayerItem({ element, depth }: LayerItemProps) {
         {/* Icon */}
         <Icon className="h-3.5 w-3.5 shrink-0 stroke-current" />
 
-        {/* Name */}
-        <span className="flex-1 truncate">{name}</span>
+        {/* Name (editable) */}
+        {isEditing ? (
+          <Input
+            ref={inputRef}
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            onBlur={handleRenameSubmit}
+            onKeyDown={handleRenameKeyDown}
+            className="h-5 flex-1 px-1 py-0 text-xs"
+            autoFocus
+          />
+        ) : (
+          <span className="flex-1 truncate">{name}</span>
+        )}
 
         {/* Actions (visible on hover) */}
-        <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-          <button
-            onClick={toggleVisibility}
-            className="rounded p-0.5 hover:bg-gray-200"
-            title={element.visible ? 'Ausblenden' : 'Einblenden'}
-          >
-            {element.visible ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-          </button>
-          <button
-            onClick={toggleLock}
-            className="rounded p-0.5 hover:bg-gray-200"
-            title={element.locked ? 'Entsperren' : 'Sperren'}
-          >
-            {element.locked ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
-          </button>
-        </div>
+        {!isEditing && (
+          <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+            <button
+              onClick={toggleVisibility}
+              className="rounded p-0.5 hover:bg-gray-200"
+              title={element.visible ? 'Ausblenden' : 'Einblenden'}
+            >
+              {element.visible ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+            </button>
+            <button
+              onClick={toggleLock}
+              className="rounded p-0.5 hover:bg-gray-200"
+              title={element.locked ? 'Entsperren' : 'Sperren'}
+            >
+              {element.locked ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Children */}
       {hasChildren && isExpanded && children.length > 0 && (
         <div>
           {children.map((child) => (
-            <LayerItem key={child.id} element={child} depth={depth + 1} />
+            <LayerItem
+              key={child.id}
+              element={child}
+              depth={depth + 1}
+              onDragStart={onDragStart}
+              onDragEnd={onDragEnd}
+              onDrop={onDrop}
+              draggedId={draggedId}
+            />
           ))}
         </div>
       )}
@@ -212,8 +302,16 @@ function LayerItem({ element, depth }: LayerItemProps) {
 }
 
 export function LayerPanel() {
-  const { slides, currentSlideIndex, groupElements, ungroupElement, createFrameFromElements } =
-    useSlidesStore()
+  const [draggedId, setDraggedId] = useState<string | null>(null)
+
+  const {
+    slides,
+    currentSlideIndex,
+    groupElements,
+    ungroupElement,
+    createFrameFromElements,
+    moveElementToParent,
+  } = useSlidesStore()
   const { selectedIds, clearSelection, select } = useSelectionStore()
   const { pushState } = useHistoryStore()
   const { markDirty } = useProjectStore()
@@ -223,6 +321,36 @@ export function LayerPanel() {
 
   // Reverse to show top elements first (like Figma)
   const reversedElements = [...elements].reverse()
+
+  const handleDragStart = (elementId: string) => {
+    setDraggedId(elementId)
+  }
+
+  const handleDragEnd = () => {
+    setDraggedId(null)
+  }
+
+  const handleDrop = (targetParentId: string | null) => {
+    if (!draggedId) return
+    pushState(slides)
+    moveElementToParent(draggedId, targetParentId)
+    markDirty()
+    setDraggedId(null)
+  }
+
+  // Handle drop on root (outside any frame)
+  const handleRootDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    if (draggedId) {
+      handleDrop(null)
+    }
+  }
+
+  const handleRootDragOver = (e: React.DragEvent) => {
+    if (draggedId) {
+      e.preventDefault()
+    }
+  }
 
   const handleGroup = () => {
     if (selectedIds.length < 2) return
@@ -296,14 +424,26 @@ export function LayerPanel() {
       </div>
 
       {/* Layer list */}
-      <div className="min-h-0 flex-1 overflow-y-auto p-1">
+      <div
+        className="min-h-0 flex-1 overflow-y-auto p-1"
+        onDrop={handleRootDrop}
+        onDragOver={handleRootDragOver}
+      >
         {reversedElements.length === 0 ? (
           <div className="flex h-full items-center justify-center text-[10px] text-gray-400">
             Keine Elemente
           </div>
         ) : (
           reversedElements.map((element) => (
-            <LayerItem key={element.id} element={element} depth={0} />
+            <LayerItem
+              key={element.id}
+              element={element}
+              depth={0}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+              onDrop={handleDrop}
+              draggedId={draggedId}
+            />
           ))
         )}
       </div>
