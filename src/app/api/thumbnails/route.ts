@@ -24,10 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!projectId) {
-      return NextResponse.json(
-        { error: 'No projectId provided' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'No projectId provided' }, { status: 400 })
     }
 
     // Convert file to buffer
@@ -48,9 +45,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get public URL
-    const { data: urlData } = supabase.storage
-      .from('thumbnails')
-      .getPublicUrl(fileName)
+    const { data: urlData } = supabase.storage.from('thumbnails').getPublicUrl(fileName)
 
     // Update project with thumbnail URL
     const { error: updateError } = await supabase

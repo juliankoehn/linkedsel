@@ -55,8 +55,7 @@ const PROVIDERS = [
 
 export function AIPanel({ isOpen, onClose, onApply }: AIPanelProps) {
   const [topic, setTopic] = useState('')
-  const [style, setStyle] =
-    useState<(typeof STYLES)[number]['id']>('professional')
+  const [style, setStyle] = useState<(typeof STYLES)[number]['id']>('professional')
   const [slideCount, setSlideCount] = useState(5)
   const [language, setLanguage] = useState<'de' | 'en'>('de')
   const [provider, setProvider] = useState<'openai' | 'anthropic'>('openai')
@@ -101,8 +100,7 @@ export function AIPanel({ isOpen, onClose, onApply }: AIPanelProps) {
       console.error('AI generation error:', error)
       toast({
         title: 'Fehler',
-        description:
-          error instanceof Error ? error.message : 'Generation fehlgeschlagen',
+        description: error instanceof Error ? error.message : 'Generation fehlgeschlagen',
         variant: 'destructive',
       })
     } finally {
@@ -173,9 +171,7 @@ export function AIPanel({ isOpen, onClose, onApply }: AIPanelProps) {
 
               {/* Style Selection */}
               <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700">
-                  Stil
-                </label>
+                <label className="mb-2 block text-sm font-medium text-gray-700">Stil</label>
                 <div className="grid grid-cols-2 gap-2">
                   {STYLES.map((s) => (
                     <button
@@ -215,9 +211,7 @@ export function AIPanel({ isOpen, onClose, onApply }: AIPanelProps) {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
-                    Sprache
-                  </label>
+                  <label className="mb-2 block text-sm font-medium text-gray-700">Sprache</label>
                   <select
                     value={language}
                     onChange={(e) => setLanguage(e.target.value as 'de' | 'en')}
@@ -237,9 +231,7 @@ export function AIPanel({ isOpen, onClose, onApply }: AIPanelProps) {
                   </label>
                   <select
                     value={provider}
-                    onChange={(e) =>
-                      setProvider(e.target.value as 'openai' | 'anthropic')
-                    }
+                    onChange={(e) => setProvider(e.target.value as 'openai' | 'anthropic')}
                     className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500 focus:outline-none"
                   >
                     {PROVIDERS.map((p) => (
@@ -282,19 +274,10 @@ export function AIPanel({ isOpen, onClose, onApply }: AIPanelProps) {
 
                   <div className="max-h-64 space-y-3 overflow-auto rounded-lg border bg-gray-50 p-4">
                     {result.slides.map((slide, index) => (
-                      <div
-                        key={index}
-                        className="rounded-lg border bg-white p-3"
-                      >
-                        <p className="text-xs font-medium text-purple-600">
-                          Slide {index + 1}
-                        </p>
-                        <p className="mt-1 font-semibold text-gray-900">
-                          {slide.headline}
-                        </p>
-                        <p className="mt-1 text-sm text-gray-600">
-                          {slide.body}
-                        </p>
+                      <div key={index} className="rounded-lg border bg-white p-3">
+                        <p className="text-xs font-medium text-purple-600">Slide {index + 1}</p>
+                        <p className="mt-1 font-semibold text-gray-900">{slide.headline}</p>
+                        <p className="mt-1 text-sm text-gray-600">{slide.body}</p>
                         {slide.callToAction && (
                           <p className="mt-1 text-sm font-medium text-purple-600">
                             {slide.callToAction}

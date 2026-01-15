@@ -55,7 +55,7 @@ function EditorContent() {
 
     initEditor()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [templateId, projectId])
+  }, [templateId, projectId, loadProject, loadTemplate, reset, toast])
 
   if (isLoading) {
     return (

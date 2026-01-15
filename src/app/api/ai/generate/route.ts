@@ -1,10 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server'
 
 import {
-  createAIService,
-  getDefaultAIService,
   type AIProvider,
   type ContentGenerationRequest,
+  createAIService,
+  getDefaultAIService,
 } from '@/lib/ai'
 import { decryptApiKey } from '@/lib/encryption'
 import { createClient } from '@/lib/supabase/server'
@@ -86,8 +86,7 @@ export async function POST(request: NextRequest) {
     if (!aiService) {
       return NextResponse.json(
         {
-          error:
-            'AI generation requires a Pro subscription or your own API keys with BYOK plan',
+          error: 'AI generation requires a Pro subscription or your own API keys with BYOK plan',
         },
         { status: 403 }
       )
@@ -104,9 +103,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result)
   } catch (error) {
     console.error('AI generation error:', error)
-    return NextResponse.json(
-      { error: 'Failed to generate content' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to generate content' }, { status: 500 })
   }
 }

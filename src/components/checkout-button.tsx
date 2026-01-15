@@ -52,8 +52,7 @@ export function CheckoutButton({
       console.error('Checkout error:', error)
       toast({
         title: 'Fehler',
-        description:
-          error instanceof Error ? error.message : 'Checkout fehlgeschlagen',
+        description: error instanceof Error ? error.message : 'Checkout fehlgeschlagen',
         variant: 'destructive',
       })
       setIsLoading(false)

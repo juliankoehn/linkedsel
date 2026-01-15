@@ -10,14 +10,7 @@ export const metadata: Metadata = {
   },
   description:
     'Create stunning LinkedIn carousels in minutes. Upload images or use templates to craft engaging carousel posts that drive engagement.',
-  keywords: [
-    'LinkedIn',
-    'carousel',
-    'generator',
-    'social media',
-    'content creation',
-    'marketing',
-  ],
+  keywords: ['LinkedIn', 'carousel', 'generator', 'social media', 'content creation', 'marketing'],
   authors: [{ name: 'LinkedSel' }],
   creator: 'LinkedSel',
   openGraph: {

@@ -33,10 +33,7 @@ export function useUser(): UseUserReturn {
         setUser({
           id: authUser.id,
           email: authUser.email || '',
-          name:
-            authUser.user_metadata?.name ||
-            authUser.email?.split('@')[0] ||
-            null,
+          name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || null,
           avatarUrl: authUser.user_metadata?.avatar_url || null,
         })
       } else {
@@ -54,10 +51,7 @@ export function useUser(): UseUserReturn {
         setUser({
           id: session.user.id,
           email: session.user.email || '',
-          name:
-            session.user.user_metadata?.name ||
-            session.user.email?.split('@')[0] ||
-            null,
+          name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || null,
           avatarUrl: session.user.user_metadata?.avatar_url || null,
         })
       } else {

@@ -4,10 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import type { UpdateTables } from '@/types/database'
 
 // GET /api/projects/[id] - Get a single project
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
 
@@ -34,10 +31,7 @@ export async function GET(
 }
 
 // PUT /api/projects/[id] - Update a project
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
 
@@ -90,11 +84,7 @@ export async function DELETE(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { error } = await supabase
-    .from('projects')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', user.id)
+  const { error } = await supabase.from('projects').delete().eq('id', id).eq('user_id', user.id)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })

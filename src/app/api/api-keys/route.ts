@@ -43,10 +43,7 @@ export async function POST(request: NextRequest) {
   const { provider, key } = body
 
   if (!provider || !key) {
-    return NextResponse.json(
-      { error: 'Provider and key are required' },
-      { status: 400 }
-    )
+    return NextResponse.json({ error: 'Provider and key are required' }, { status: 400 })
   }
 
   if (!['openai', 'anthropic'].includes(provider)) {

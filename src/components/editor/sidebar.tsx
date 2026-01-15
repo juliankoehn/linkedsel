@@ -17,14 +17,8 @@ interface SlidePreviewProps {
 function SlidePreview({ slideIndex, isActive, onClick }: SlidePreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fabricCanvasRef = useRef<fabric.StaticCanvas | null>(null)
-  const {
-    slides,
-    format,
-    duplicateSlide,
-    removeSlide,
-    saveCurrentSlide,
-    currentSlideIndex,
-  } = useEditorStore()
+  const { slides, format, duplicateSlide, removeSlide, saveCurrentSlide, currentSlideIndex } =
+    useEditorStore()
   const slide = slides[slideIndex]
 
   const renderPreview = useCallback(() => {
@@ -186,15 +180,12 @@ function SlidePreview({ slideIndex, isActive, onClick }: SlidePreviewProps) {
 }
 
 export function EditorSidebar() {
-  const { slides, currentSlideIndex, setCurrentSlide, addSlide } =
-    useEditorStore()
+  const { slides, currentSlideIndex, setCurrentSlide, addSlide } = useEditorStore()
 
   return (
     <aside className="flex w-52 flex-col rounded-lg border bg-white">
       <div className="border-b p-3">
-        <h3 className="text-sm font-medium text-gray-900">
-          Slides ({slides.length})
-        </h3>
+        <h3 className="text-sm font-medium text-gray-900">Slides ({slides.length})</h3>
       </div>
 
       <div className="flex-1 space-y-3 overflow-auto p-3">
@@ -209,12 +200,7 @@ export function EditorSidebar() {
       </div>
 
       <div className="border-t p-3">
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full"
-          onClick={addSlide}
-        >
+        <Button variant="outline" size="sm" className="w-full" onClick={addSlide}>
           <Plus className="mr-2 h-4 w-4" />
           Slide hinzufügen
         </Button>

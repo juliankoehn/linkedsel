@@ -3,11 +3,7 @@
 import * as ToastPrimitive from '@radix-ui/react-toast'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { X } from 'lucide-react'
-import {
-  forwardRef,
-  type ComponentPropsWithoutRef,
-  type ElementRef,
-} from 'react'
+import { type ComponentPropsWithoutRef, type ElementRef, forwardRef } from 'react'
 
 import { useToastStore } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -47,8 +43,7 @@ const toastVariants = cva(
 
 const Toast = forwardRef<
   ElementRef<typeof ToastPrimitive.Root>,
-  ComponentPropsWithoutRef<typeof ToastPrimitive.Root> &
-    VariantProps<typeof toastVariants>
+  ComponentPropsWithoutRef<typeof ToastPrimitive.Root> & VariantProps<typeof toastVariants>
 >(({ className, variant, ...props }, ref) => {
   return (
     <ToastPrimitive.Root
@@ -123,16 +118,10 @@ export function Toaster() {
   return (
     <ToastProvider>
       {toasts.map((t) => (
-        <Toast
-          key={t.id}
-          variant={t.variant}
-          onOpenChange={() => removeToast(t.id)}
-        >
+        <Toast key={t.id} variant={t.variant} onOpenChange={() => removeToast(t.id)}>
           <div className="grid gap-1">
             <ToastTitle>{t.title}</ToastTitle>
-            {t.description && (
-              <ToastDescription>{t.description}</ToastDescription>
-            )}
+            {t.description && <ToastDescription>{t.description}</ToastDescription>}
           </div>
           <ToastClose />
         </Toast>
@@ -142,11 +131,4 @@ export function Toaster() {
   )
 }
 
-export {
-  Toast,
-  ToastAction,
-  ToastClose,
-  ToastDescription,
-  ToastTitle,
-  ToastViewport,
-}
+export { Toast, ToastAction, ToastClose, ToastDescription, ToastTitle, ToastViewport }

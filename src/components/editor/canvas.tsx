@@ -39,10 +39,7 @@ export function EditorCanvas() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't handle shortcuts when typing in input fields
-      if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement
-      ) {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return
       }
 
@@ -86,10 +83,7 @@ export function EditorCanvas() {
       }
 
       // Arrow keys for moving objects
-      if (
-        selectedObject &&
-        ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)
-      ) {
+      if (selectedObject && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
         e.preventDefault()
         const step = e.shiftKey ? 10 : 1
         let left = selectedObject.left || 0

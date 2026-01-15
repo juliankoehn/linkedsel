@@ -27,11 +27,7 @@ import { Button } from '@/components/ui/button'
 import { useExport } from '@/hooks/use-export'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
-import {
-  FORMAT_PRESETS,
-  type FormatPreset,
-  useEditorStore,
-} from '@/stores/editor'
+import { FORMAT_PRESETS, type FormatPreset, useEditorStore } from '@/stores/editor'
 
 interface EditorToolbarProps {
   onOpenAIPanel?: () => void
@@ -111,15 +107,9 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
 
   const isTextObject = selectedObject instanceof fabric.IText
   const fill = (selectedObject?.fill as string) || '#000000'
-  const fontSize = isTextObject
-    ? (selectedObject as fabric.IText).fontSize || 48
-    : 48
-  const fontWeight = isTextObject
-    ? (selectedObject as fabric.IText).fontWeight
-    : 'normal'
-  const fontStyle = isTextObject
-    ? (selectedObject as fabric.IText).fontStyle
-    : 'normal'
+  const fontSize = isTextObject ? (selectedObject as fabric.IText).fontSize || 48 : 48
+  const fontWeight = isTextObject ? (selectedObject as fabric.IText).fontWeight : 'normal'
+  const fontStyle = isTextObject ? (selectedObject as fabric.IText).fontStyle : 'normal'
 
   const handleFillChange = (color: string) => {
     if (selectedObject) {
@@ -169,12 +159,7 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
                 onKeyDown={handleNameKeyDown}
                 className="rounded border px-2 py-1 text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={handleNameSubmit}
-              >
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleNameSubmit}>
                 <Check className="h-3 w-3" />
               </Button>
             </div>
@@ -187,9 +172,7 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
               <Pencil className="h-3 w-3 text-gray-400" />
             </button>
           )}
-          {isDirty && (
-            <span className="text-xs text-gray-400">Ungespeichert</span>
-          )}
+          {isDirty && <span className="text-xs text-gray-400">Ungespeichert</span>}
         </div>
 
         <div className="flex items-center gap-2">
@@ -206,12 +189,7 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
             ))}
           </select>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSave}
-            disabled={isSaving}
-          >
+          <Button variant="outline" size="sm" onClick={handleSave} disabled={isSaving}>
             {isSaving ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
@@ -250,36 +228,16 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
         />
 
         <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => addText()}
-            title="Text hinzufügen"
-          >
+          <Button variant="ghost" size="icon" onClick={() => addText()} title="Text hinzufügen">
             <Type className="h-4 w-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleImageUpload}
-            title="Bild hochladen"
-          >
+          <Button variant="ghost" size="icon" onClick={handleImageUpload} title="Bild hochladen">
             <ImageIcon className="h-4 w-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => addShape('rect')}
-            title="Rechteck"
-          >
+          <Button variant="ghost" size="icon" onClick={() => addShape('rect')} title="Rechteck">
             <Square className="h-4 w-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => addShape('circle')}
-            title="Kreis"
-          >
+          <Button variant="ghost" size="icon" onClick={() => addShape('circle')} title="Kreis">
             <Circle className="h-4 w-4" />
           </Button>
 
@@ -340,10 +298,7 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className={cn(
-                      'h-7 w-7',
-                      fontWeight === 'bold' && 'bg-accent'
-                    )}
+                    className={cn('h-7 w-7', fontWeight === 'bold' && 'bg-accent')}
                     onClick={toggleBold}
                     title="Fett"
                   >
@@ -352,10 +307,7 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className={cn(
-                      'h-7 w-7',
-                      fontStyle === 'italic' && 'bg-accent'
-                    )}
+                    className={cn('h-7 w-7', fontStyle === 'italic' && 'bg-accent')}
                     onClick={toggleItalic}
                     title="Kursiv"
                   >
@@ -386,12 +338,7 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
           >
             <Redo className="h-4 w-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={deleteSelected}
-            title="Löschen (Entf)"
-          >
+          <Button variant="ghost" size="icon" onClick={deleteSelected} title="Löschen (Entf)">
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>

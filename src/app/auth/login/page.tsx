@@ -40,11 +40,7 @@ function LoginForm() {
   return (
     <>
       <div className="mt-8">
-        {error && (
-          <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-600">
-            {error}
-          </div>
-        )}
+        {error && <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-600">{error}</div>}
 
         <Button
           onClick={handleGoogleLogin}
@@ -107,9 +103,7 @@ export default function LoginPage() {
           <Link href="/" className="text-brand-600 text-2xl font-bold">
             LinkedSel
           </Link>
-          <h1 className="mt-6 text-2xl font-bold text-gray-900">
-            Willkommen zurück
-          </h1>
+          <h1 className="mt-6 text-2xl font-bold text-gray-900">Willkommen zurück</h1>
           <p className="mt-2 text-gray-600">Melde dich an um fortzufahren</p>
         </div>
 

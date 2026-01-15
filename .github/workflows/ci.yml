@@ -11,16 +11,23 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Dummy values for build (real values in Vercel)
   NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
   NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-key
 
 jobs:
-  lint:
-    name: Lint & Type Check
+  check:
+    name: Biome & Type Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup Biome
+        uses: biomejs/setup-biome@v2
+        with:
+          version: latest
+
+      - name: Run Biome
+        run: biome ci .
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -34,14 +41,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint
-        run: pnpm lint
-
       - name: Type check
         run: pnpm typecheck
-
-      - name: Format check
-        run: pnpm format:check
 
   test:
     name: Unit Tests

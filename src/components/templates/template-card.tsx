@@ -11,10 +11,7 @@ interface TemplateCardProps {
   hasSubscription?: boolean
 }
 
-export function TemplateCard({
-  template,
-  hasSubscription = false,
-}: TemplateCardProps) {
+export function TemplateCard({ template, hasSubscription = false }: TemplateCardProps) {
   const isLocked = template.isPremium && !hasSubscription
 
   return (
@@ -35,9 +32,7 @@ export function TemplateCard({
             <span
               className={cn(
                 'inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium',
-                hasSubscription
-                  ? 'bg-brand-100 text-brand-700'
-                  : 'bg-gray-900 text-white'
+                hasSubscription ? 'bg-brand-100 text-brand-700' : 'bg-gray-900 text-white'
               )}
             >
               {isLocked && <Lock className="h-3 w-3" />}
@@ -96,9 +91,7 @@ function TemplatePreview({ template }: { template: CarouselTemplate }) {
                   top: element.props.top,
                   fontSize: (element.props as { fontSize: number }).fontSize,
                   color: (element.props as { fill: string }).fill,
-                  fontWeight:
-                    (element.props as { fontWeight?: string }).fontWeight ||
-                    'normal',
+                  fontWeight: (element.props as { fontWeight?: string }).fontWeight || 'normal',
                   fontFamily: 'Inter, sans-serif',
                   whiteSpace: 'nowrap',
                 }}

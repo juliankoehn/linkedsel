@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import { createClient } from '@/lib/supabase/client'
 
@@ -30,11 +30,10 @@ const DEFAULT_SUBSCRIPTION: Subscription = {
 }
 
 export function useSubscription(): UseSubscriptionReturn {
-  const [subscription, setSubscription] =
-    useState<Subscription>(DEFAULT_SUBSCRIPTION)
+  const [subscription, setSubscription] = useState<Subscription>(DEFAULT_SUBSCRIPTION)
   const [isLoading, setIsLoading] = useState(true)
 
-  const fetchSubscription = async () => {
+  const fetchSubscription = useCallback(async () => {
     const supabase = createClient()
 
     const {
@@ -71,15 +70,14 @@ export function useSubscription(): UseSubscriptionReturn {
       })
     }
     setIsLoading(false)
-  }
+  }, [])
 
   useEffect(() => {
     fetchSubscription()
-  }, [])
+  }, [fetchSubscription])
 
   const isPro = subscription.plan === 'pro' && subscription.status === 'active'
-  const isByok =
-    subscription.plan === 'byok' && subscription.status === 'active'
+  const isByok = subscription.plan === 'byok' && subscription.status === 'active'
   const hasSubscription = isPro || isByok
 
   return {

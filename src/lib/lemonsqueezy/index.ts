@@ -1,9 +1,5 @@
-import crypto from 'crypto'
-
-import {
-  getAuthenticatedUser,
-  lemonSqueezySetup,
-} from '@lemonsqueezy/lemonsqueezy.js'
+import crypto from 'node:crypto'
+import { getAuthenticatedUser, lemonSqueezySetup } from '@lemonsqueezy/lemonsqueezy.js'
 
 /**
  * Initialize LemonSqueezy SDK
@@ -21,10 +17,7 @@ export function initLemonSqueezy() {
 /**
  * Verify webhook signature from LemonSqueezy
  */
-export function verifyWebhookSignature(
-  payload: string,
-  signature: string
-): boolean {
+export function verifyWebhookSignature(payload: string, signature: string): boolean {
   const secret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET
 
   if (!secret) {

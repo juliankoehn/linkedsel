@@ -65,9 +65,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  console.log(
-    '[POST /api/projects] Created project:',
-    (project as { id: string }).id
-  )
+  console.log('[POST /api/projects] Created project:', (project as { id: string }).id)
   return NextResponse.json({ project }, { status: 201 })
 }

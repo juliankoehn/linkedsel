@@ -1,6 +1,6 @@
 'use client'
 
-import { type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 
 import { Toaster } from '@/components/ui/toaster'
 import { PostHogProvider } from '@/lib/posthog/provider'

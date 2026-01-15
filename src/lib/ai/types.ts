@@ -23,7 +23,5 @@ export interface ContentGenerationResponse {
 }
 
 export interface AIService {
-  generateContent(
-    request: ContentGenerationRequest
-  ): Promise<ContentGenerationResponse>
+  generateContent(request: ContentGenerationRequest): Promise<ContentGenerationResponse>
 }

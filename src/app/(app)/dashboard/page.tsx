@@ -41,9 +41,7 @@ export default async function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="mt-1 text-gray-600">
-            Willkommen zurück! Hier sind deine Projekte.
-          </p>
+          <p className="mt-1 text-gray-600">Willkommen zurück! Hier sind deine Projekte.</p>
         </div>
         <Button asChild>
           <Link href="/editor">
@@ -56,12 +54,8 @@ export default async function DashboardPage() {
       {projects.length === 0 ? (
         <div className="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
           <FileText className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-4 text-lg font-medium text-gray-900">
-            Keine Projekte
-          </h3>
-          <p className="mt-2 text-gray-600">
-            Erstelle dein erstes LinkedIn Carousel.
-          </p>
+          <h3 className="mt-4 text-lg font-medium text-gray-900">Keine Projekte</h3>
+          <p className="mt-2 text-gray-600">Erstelle dein erstes LinkedIn Carousel.</p>
           <div className="mt-6">
             <Button asChild>
               <Link href="/editor">
@@ -84,9 +78,7 @@ export default async function DashboardPage() {
           >
             <div className="text-center">
               <Plus className="mx-auto h-8 w-8 text-gray-400" />
-              <span className="mt-2 block text-sm font-medium text-gray-600">
-                Neues Carousel
-              </span>
+              <span className="mt-2 block text-sm font-medium text-gray-600">Neues Carousel</span>
             </div>
           </Link>
         </div>

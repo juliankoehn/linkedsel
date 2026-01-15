@@ -63,9 +63,7 @@ function SettingsContent() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Einstellungen</h1>
-        <p className="mt-1 text-gray-600">
-          Verwalte dein Konto und deine Einstellungen
-        </p>
+        <p className="mt-1 text-gray-600">Verwalte dein Konto und deine Einstellungen</p>
       </div>
 
       {/* Success message */}
@@ -117,12 +115,8 @@ function SettingsContent() {
               onSignOut={signOut}
             />
           )}
-          {activeTab === 'subscription' && (
-            <SubscriptionSettings subscription={subscription} />
-          )}
-          {activeTab === 'api-keys' && (
-            <ApiKeySettings subscription={subscription} />
-          )}
+          {activeTab === 'subscription' && <SubscriptionSettings subscription={subscription} />}
+          {activeTab === 'api-keys' && <ApiKeySettings subscription={subscription} />}
         </div>
       </div>
     </div>
@@ -172,9 +166,7 @@ function AccountSettings({ user, onSignOut }: AccountSettingsProps) {
     <div className="space-y-6">
       <div className="rounded-lg border bg-white p-6">
         <h2 className="text-lg font-semibold text-gray-900">Profil</h2>
-        <p className="mt-1 text-sm text-gray-500">
-          Deine Account-Informationen
-        </p>
+        <p className="mt-1 text-sm text-gray-500">Deine Account-Informationen</p>
 
         <div className="mt-6 space-y-4">
           <div className="flex items-center gap-4">
@@ -230,12 +222,7 @@ function SubscriptionSettings({ subscription }: SubscriptionSettingsProps) {
       id: 'free' as const,
       name: 'Free',
       price: '0€',
-      features: [
-        'Unbegrenzte Carousels',
-        'Basic Templates',
-        'PDF Export',
-        'Watermark',
-      ],
+      features: ['Unbegrenzte Carousels', 'Basic Templates', 'PDF Export', 'Watermark'],
     },
     {
       id: 'byok' as const,
@@ -276,8 +263,7 @@ function SubscriptionSettings({ subscription }: SubscriptionSettingsProps) {
       console.error('Portal error:', error)
       toast({
         title: 'Fehler',
-        description:
-          error instanceof Error ? error.message : 'Verbindungsfehler',
+        description: error instanceof Error ? error.message : 'Verbindungsfehler',
         variant: 'destructive',
       })
     } finally {
@@ -293,9 +279,7 @@ function SubscriptionSettings({ subscription }: SubscriptionSettingsProps) {
 
         <div className="mt-6 flex items-center justify-between rounded-lg border-2 border-blue-500 bg-blue-50 p-4">
           <div>
-            <p className="text-lg font-bold text-blue-700">
-              {currentPlan?.name || 'Free'}
-            </p>
+            <p className="text-lg font-bold text-blue-700">{currentPlan?.name || 'Free'}</p>
             <p className="text-sm text-blue-600">{currentPlan?.price}</p>
           </div>
           <span className="rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-700">
@@ -305,21 +289,14 @@ function SubscriptionSettings({ subscription }: SubscriptionSettingsProps) {
 
         {subscription.plan !== 'free' && subscription.currentPeriodEnd && (
           <p className="mt-4 text-sm text-gray-500">
-            Verlängert sich am{' '}
-            {new Date(subscription.currentPeriodEnd).toLocaleDateString(
-              'de-DE'
-            )}
+            Verlängert sich am {new Date(subscription.currentPeriodEnd).toLocaleDateString('de-DE')}
           </p>
         )}
       </div>
 
       <div className="rounded-lg border bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900">
-          Verfügbare Pläne
-        </h2>
-        <p className="mt-1 text-sm text-gray-500">
-          Wähle den Plan, der zu dir passt
-        </p>
+        <h2 className="text-lg font-semibold text-gray-900">Verfügbare Pläne</h2>
+        <p className="mt-1 text-sm text-gray-500">Wähle den Plan, der zu dir passt</p>
 
         <div className="mt-6 grid gap-4 md:grid-cols-3">
           {plans.map((plan) => (
@@ -327,9 +304,7 @@ function SubscriptionSettings({ subscription }: SubscriptionSettingsProps) {
               key={plan.id}
               className={cn(
                 'rounded-lg border p-4',
-                subscription.plan === plan.id
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200'
+                subscription.plan === plan.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
               )}
             >
               <div className="mb-4">
@@ -371,16 +346,10 @@ function SubscriptionSettings({ subscription }: SubscriptionSettingsProps) {
       {subscription.plan !== 'free' && (
         <div className="rounded-lg border bg-white p-6">
           <h2 className="text-lg font-semibold text-gray-900">Abo verwalten</h2>
-          <p className="mt-1 text-sm text-gray-500">
-            Zahlungsmethode ändern oder Abo kündigen
-          </p>
+          <p className="mt-1 text-sm text-gray-500">Zahlungsmethode ändern oder Abo kündigen</p>
 
           <div className="mt-6">
-            <Button
-              variant="outline"
-              onClick={handleOpenPortal}
-              disabled={isLoadingPortal}
-            >
+            <Button variant="outline" onClick={handleOpenPortal} disabled={isLoadingPortal}>
               {isLoadingPortal ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
@@ -409,8 +378,7 @@ function ApiKeySettings({ subscription }: ApiKeySettingsProps) {
   const [isSaving, setIsSaving] = useState(false)
   const { toast } = useToast()
 
-  const canUseApiKeys =
-    subscription.plan === 'byok' || subscription.plan === 'pro'
+  const canUseApiKeys = subscription.plan === 'byok' || subscription.plan === 'pro'
 
   const handleSaveKey = async (provider: 'openai' | 'anthropic') => {
     const key = provider === 'openai' ? openaiKey : anthropicKey
@@ -454,9 +422,7 @@ function ApiKeySettings({ subscription }: ApiKeySettingsProps) {
     return (
       <div className="rounded-lg border bg-white p-6">
         <h2 className="text-lg font-semibold text-gray-900">API Keys</h2>
-        <p className="mt-1 text-sm text-gray-500">
-          Bring Your Own Key (BYOK) für AI Features
-        </p>
+        <p className="mt-1 text-sm text-gray-500">Bring Your Own Key (BYOK) für AI Features</p>
 
         <div className="mt-6 rounded-lg border-2 border-dashed border-gray-300 p-8 text-center">
           <Key className="mx-auto h-12 w-12 text-gray-400" />
@@ -464,8 +430,7 @@ function ApiKeySettings({ subscription }: ApiKeySettingsProps) {
             API Keys sind ab BYOK verfügbar
           </h3>
           <p className="mt-2 text-gray-600">
-            Upgrade auf BYOK oder Pro, um eigene API Keys für AI Content
-            Generation zu nutzen.
+            Upgrade auf BYOK oder Pro, um eigene API Keys für AI Content Generation zu nutzen.
           </p>
           <div className="mt-6">
             <Button asChild>
@@ -488,12 +453,8 @@ function ApiKeySettings({ subscription }: ApiKeySettingsProps) {
         <div className="mt-6 space-y-6">
           {/* OpenAI */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">
-              OpenAI API Key
-            </label>
-            <p className="mt-1 text-xs text-gray-500">
-              Für GPT-basierte Content Generation
-            </p>
+            <label className="block text-sm font-medium text-gray-700">OpenAI API Key</label>
+            <p className="mt-1 text-xs text-gray-500">Für GPT-basierte Content Generation</p>
             <div className="mt-2 flex gap-2">
               <input
                 type={showOpenai ? 'text' : 'password'}
@@ -502,33 +463,19 @@ function ApiKeySettings({ subscription }: ApiKeySettingsProps) {
                 placeholder="sk-..."
                 className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
               />
-              <Button
-                variant="outline"
-                onClick={() => setShowOpenai(!showOpenai)}
-              >
+              <Button variant="outline" onClick={() => setShowOpenai(!showOpenai)}>
                 {showOpenai ? 'Verstecken' : 'Anzeigen'}
               </Button>
-              <Button
-                onClick={() => handleSaveKey('openai')}
-                disabled={isSaving}
-              >
-                {isSaving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  'Speichern'
-                )}
+              <Button onClick={() => handleSaveKey('openai')} disabled={isSaving}>
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Speichern'}
               </Button>
             </div>
           </div>
 
           {/* Anthropic */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Anthropic API Key
-            </label>
-            <p className="mt-1 text-xs text-gray-500">
-              Für Claude-basierte Content Generation
-            </p>
+            <label className="block text-sm font-medium text-gray-700">Anthropic API Key</label>
+            <p className="mt-1 text-xs text-gray-500">Für Claude-basierte Content Generation</p>
             <div className="mt-2 flex gap-2">
               <input
                 type={showAnthropic ? 'text' : 'password'}
@@ -537,21 +484,11 @@ function ApiKeySettings({ subscription }: ApiKeySettingsProps) {
                 placeholder="sk-ant-..."
                 className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
               />
-              <Button
-                variant="outline"
-                onClick={() => setShowAnthropic(!showAnthropic)}
-              >
+              <Button variant="outline" onClick={() => setShowAnthropic(!showAnthropic)}>
                 {showAnthropic ? 'Verstecken' : 'Anzeigen'}
               </Button>
-              <Button
-                onClick={() => handleSaveKey('anthropic')}
-                disabled={isSaving}
-              >
-                {isSaving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  'Speichern'
-                )}
+              <Button onClick={() => handleSaveKey('anthropic')} disabled={isSaving}>
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Speichern'}
               </Button>
             </div>
           </div>
@@ -560,9 +497,8 @@ function ApiKeySettings({ subscription }: ApiKeySettingsProps) {
 
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
         <p className="text-sm text-amber-800">
-          <strong>Hinweis:</strong> Deine API Keys werden verschlüsselt
-          gespeichert und nur für die AI Content Generation in deinem Account
-          verwendet.
+          <strong>Hinweis:</strong> Deine API Keys werden verschlüsselt gespeichert und nur für die
+          AI Content Generation in deinem Account verwendet.
         </p>
       </div>
     </div>

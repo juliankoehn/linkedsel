@@ -11,14 +11,12 @@ import { TEMPLATE_CATEGORIES, type TemplateCategory } from '@/types/templates'
 type FilterCategory = TemplateCategory | 'all'
 
 export default function TemplatesPage() {
-  const [selectedCategory, setSelectedCategory] =
-    useState<FilterCategory>('all')
+  const [selectedCategory, setSelectedCategory] = useState<FilterCategory>('all')
   const [showPremiumOnly, setShowPremiumOnly] = useState(false)
   const { hasSubscription } = useSubscription()
 
   const filteredTemplates = DEFAULT_TEMPLATES.filter((template) => {
-    const categoryMatch =
-      selectedCategory === 'all' || template.category === selectedCategory
+    const categoryMatch = selectedCategory === 'all' || template.category === selectedCategory
     const premiumMatch = !showPremiumOnly || template.isPremium
     return categoryMatch && premiumMatch
   })
@@ -35,9 +33,7 @@ export default function TemplatesPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Templates</h1>
-        <p className="mt-1 text-gray-600">
-          Wähle ein Template als Startpunkt für dein Carousel
-        </p>
+        <p className="mt-1 text-gray-600">Wähle ein Template als Startpunkt für dein Carousel</p>
       </div>
 
       {/* Filters */}
@@ -69,19 +65,13 @@ export default function TemplatesPage() {
       {/* Templates Grid */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filteredTemplates.map((template) => (
-          <TemplateCard
-            key={template.id}
-            template={template}
-            hasSubscription={hasSubscription}
-          />
+          <TemplateCard key={template.id} template={template} hasSubscription={hasSubscription} />
         ))}
       </div>
 
       {filteredTemplates.length === 0 && (
         <div className="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
-          <p className="text-gray-600">
-            Keine Templates in dieser Kategorie gefunden.
-          </p>
+          <p className="text-gray-600">Keine Templates in dieser Kategorie gefunden.</p>
           <Button
             variant="outline"
             className="mt-4"
@@ -102,8 +92,8 @@ export default function TemplatesPage() {
             <div>
               <h3 className="text-xl font-bold">Mehr Templates freischalten</h3>
               <p className="text-brand-100 mt-1">
-                Mit Pro hast du Zugriff auf alle Premium Templates und kannst
-                das Watermark entfernen.
+                Mit Pro hast du Zugriff auf alle Premium Templates und kannst das Watermark
+                entfernen.
               </p>
             </div>
             <Button

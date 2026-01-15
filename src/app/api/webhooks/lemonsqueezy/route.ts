@@ -3,8 +3,8 @@ import { type NextRequest, NextResponse } from 'next/server'
 import {
   getPlanFromVariant,
   normalizeSubscriptionStatus,
-  verifyWebhookSignature,
   type SubscriptionStatus,
+  verifyWebhookSignature,
 } from '@/lib/lemonsqueezy'
 import { createAdminClient } from '@/lib/supabase/admin'
 
@@ -74,10 +74,7 @@ export async function POST(request: NextRequest) {
     const signature = request.headers.get('x-signature')
 
     if (!signature) {
-      return NextResponse.json(
-        { error: 'Missing signature header' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'Missing signature header' }, { status: 401 })
     }
 
     // Verify webhook signature
@@ -99,10 +96,7 @@ export async function POST(request: NextRequest) {
         eventName,
         subscriptionId,
       })
-      return NextResponse.json(
-        { error: 'Missing user_id in custom_data' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Missing user_id in custom_data' }, { status: 400 })
     }
 
     const supabase = createAdminClient()
@@ -136,10 +130,7 @@ export async function POST(request: NextRequest) {
 
           if (error) {
             console.error('Failed to update subscription', error)
-            return NextResponse.json(
-              { error: 'Failed to update subscription' },
-              { status: 500 }
-            )
+            return NextResponse.json({ error: 'Failed to update subscription' }, { status: 500 })
           }
         } else {
           // Create new subscription
@@ -154,10 +145,7 @@ export async function POST(request: NextRequest) {
 
           if (error) {
             console.error('Failed to create subscription', error)
-            return NextResponse.json(
-              { error: 'Failed to create subscription' },
-              { status: 500 }
-            )
+            return NextResponse.json({ error: 'Failed to create subscription' }, { status: 500 })
           }
         }
 
@@ -180,10 +168,7 @@ export async function POST(request: NextRequest) {
 
         if (error) {
           console.error('Failed to update subscription', error)
-          return NextResponse.json(
-            { error: 'Failed to update subscription' },
-            { status: 500 }
-          )
+          return NextResponse.json({ error: 'Failed to update subscription' }, { status: 500 })
         }
 
         break
@@ -202,10 +187,7 @@ export async function POST(request: NextRequest) {
 
         if (error) {
           console.error('Failed to cancel subscription', error)
-          return NextResponse.json(
-            { error: 'Failed to cancel subscription' },
-            { status: 500 }
-          )
+          return NextResponse.json({ error: 'Failed to cancel subscription' }, { status: 500 })
         }
 
         break
@@ -225,10 +207,7 @@ export async function POST(request: NextRequest) {
 
         if (error) {
           console.error('Failed to resume subscription', error)
-          return NextResponse.json(
-            { error: 'Failed to resume subscription' },
-            { status: 500 }
-          )
+          return NextResponse.json({ error: 'Failed to resume subscription' }, { status: 500 })
         }
 
         break
@@ -245,10 +224,7 @@ export async function POST(request: NextRequest) {
 
         if (error) {
           console.error('Failed to pause subscription', error)
-          return NextResponse.json(
-            { error: 'Failed to pause subscription' },
-            { status: 500 }
-          )
+          return NextResponse.json({ error: 'Failed to pause subscription' }, { status: 500 })
         }
 
         break
@@ -270,9 +246,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true })
   } catch (error) {
     console.error('Webhook error:', error)
-    return NextResponse.json(
-      { error: 'Webhook handler failed' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Webhook handler failed' }, { status: 500 })
   }
 }

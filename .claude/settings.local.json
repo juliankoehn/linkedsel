@@ -26,7 +26,10 @@
       "Bash(git commit:*)",
       "Bash(pnpm test:coverage:*)",
       "Bash(pnpm format:check:*)",
-      "Bash(pnpm format:*)"
+      "Bash(pnpm format:*)",
+      "Bash(pnpm check:*)",
+      "Bash(pnpm biome:*)",
+      "Bash(pnpm check:fix:*)"
     ]
   }
 }

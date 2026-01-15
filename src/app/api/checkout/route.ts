@@ -1,7 +1,4 @@
-import {
-  createCheckout,
-  lemonSqueezySetup,
-} from '@lemonsqueezy/lemonsqueezy.js'
+import { createCheckout, lemonSqueezySetup } from '@lemonsqueezy/lemonsqueezy.js'
 import { type NextRequest, NextResponse } from 'next/server'
 
 import { createClient } from '@/lib/supabase/server'
@@ -48,10 +45,7 @@ export async function POST(request: NextRequest) {
         variantId,
         storeId,
       })
-      return NextResponse.json(
-        { error: 'Payment system not configured' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Payment system not configured' }, { status: 500 })
     }
 
     initLemonSqueezy()
@@ -72,38 +66,28 @@ export async function POST(request: NextRequest) {
         logo: true,
       },
       productOptions: {
-        enabledVariants: [parseInt(variantId)],
+        enabledVariants: [parseInt(variantId, 10)],
         redirectUrl: `${baseUrl}/settings?checkout=success`,
         receiptButtonText: 'Zurück zur App',
         receiptLinkUrl: `${baseUrl}/settings`,
-        receiptThankYouNote:
-          'Danke für dein Upgrade! Dein Account wurde aktiviert.',
+        receiptThankYouNote: 'Danke für dein Upgrade! Dein Account wurde aktiviert.',
       },
     })
 
     if (error) {
       console.error('LemonSqueezy checkout error:', error)
-      return NextResponse.json(
-        { error: 'Failed to create checkout' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Failed to create checkout' }, { status: 500 })
     }
 
     const checkoutUrl = data?.data?.attributes?.url
 
     if (!checkoutUrl) {
-      return NextResponse.json(
-        { error: 'No checkout URL returned' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'No checkout URL returned' }, { status: 500 })
     }
 
     return NextResponse.json({ url: checkoutUrl })
   } catch (error) {
     console.error('Checkout error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

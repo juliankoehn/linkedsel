@@ -1,10 +1,6 @@
 import OpenAI from 'openai'
 
-import type {
-  AIService,
-  ContentGenerationRequest,
-  ContentGenerationResponse,
-} from '../types'
+import type { AIService, ContentGenerationRequest, ContentGenerationResponse } from '../types'
 
 export class OpenAIProvider implements AIService {
   private client: OpenAI
@@ -13,18 +9,13 @@ export class OpenAIProvider implements AIService {
     this.client = new OpenAI({ apiKey })
   }
 
-  async generateContent(
-    request: ContentGenerationRequest
-  ): Promise<ContentGenerationResponse> {
+  async generateContent(request: ContentGenerationRequest): Promise<ContentGenerationResponse> {
     const styleInstructions = {
       professional:
         'Verwende einen professionellen, geschäftlichen Ton. Fokussiere auf Fakten und Mehrwert.',
-      casual:
-        'Schreibe locker und authentisch. Verwende eine persönliche Ansprache.',
-      educational:
-        'Erkläre Konzepte klar und verständlich. Verwende Beispiele.',
-      inspirational:
-        'Motiviere und inspiriere die Leser. Verwende emotionale Sprache.',
+      casual: 'Schreibe locker und authentisch. Verwende eine persönliche Ansprache.',
+      educational: 'Erkläre Konzepte klar und verständlich. Verwende Beispiele.',
+      inspirational: 'Motiviere und inspiriere die Leser. Verwende emotionale Sprache.',
     }
 
     const languageInstructions =

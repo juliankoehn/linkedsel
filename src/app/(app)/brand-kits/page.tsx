@@ -7,12 +7,7 @@ import { Button } from '@/components/ui/button'
 import { useSubscription } from '@/hooks/use-subscription'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
-import {
-  DEFAULT_COLORS,
-  DEFAULT_FONTS,
-  type BrandKit,
-  type BrandColor,
-} from '@/types/brand-kit'
+import { type BrandColor, type BrandKit, DEFAULT_COLORS, DEFAULT_FONTS } from '@/types/brand-kit'
 
 export default function BrandKitsPage() {
   const [brandKits, setBrandKits] = useState<BrandKit[]>([])
@@ -125,9 +120,7 @@ export default function BrandKitsPage() {
     )
     const updatedKit = { ...selectedKit, colors: updatedColors }
     setSelectedKit(updatedKit)
-    setBrandKits(
-      brandKits.map((k) => (k.id === selectedKit.id ? updatedKit : k))
-    )
+    setBrandKits(brandKits.map((k) => (k.id === selectedKit.id ? updatedKit : k)))
   }
 
   const handleSave = async () => {
@@ -164,9 +157,7 @@ export default function BrandKitsPage() {
       <div className="space-y-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Brand Kits</h1>
-          <p className="mt-1 text-gray-600">
-            Speichere deine Markenfarben und Schriften
-          </p>
+          <p className="mt-1 text-gray-600">Speichere deine Markenfarben und Schriften</p>
         </div>
 
         <div className="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
@@ -175,8 +166,8 @@ export default function BrandKitsPage() {
             Brand Kits sind ein Pro Feature
           </h3>
           <p className="mt-2 text-gray-600">
-            Mit Pro kannst du deine Markenfarben und Schriften speichern und mit
-            einem Klick auf alle deine Carousels anwenden.
+            Mit Pro kannst du deine Markenfarben und Schriften speichern und mit einem Klick auf
+            alle deine Carousels anwenden.
           </p>
           <div className="mt-6">
             <Button asChild>
@@ -201,9 +192,7 @@ export default function BrandKitsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Brand Kits</h1>
-          <p className="mt-1 text-gray-600">
-            Speichere deine Markenfarben und Schriften
-          </p>
+          <p className="mt-1 text-gray-600">Speichere deine Markenfarben und Schriften</p>
         </div>
         <Button onClick={handleCreateKit}>
           <Plus className="mr-2 h-4 w-4" />
@@ -214,13 +203,9 @@ export default function BrandKitsPage() {
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* Brand Kit List */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-gray-900">
-            Deine Brand Kits
-          </h2>
+          <h2 className="text-sm font-medium text-gray-900">Deine Brand Kits</h2>
           {brandKits.length === 0 ? (
-            <p className="text-sm text-gray-500">
-              Noch keine Brand Kits erstellt.
-            </p>
+            <p className="text-sm text-gray-500">Noch keine Brand Kits erstellt.</p>
           ) : (
             <div className="space-y-2">
               {brandKits.map((kit) => (
@@ -244,9 +229,7 @@ export default function BrandKitsPage() {
                         />
                       ))}
                     </div>
-                    <span className="font-medium text-gray-900">
-                      {kit.name}
-                    </span>
+                    <span className="font-medium text-gray-900">{kit.name}</span>
                   </div>
                   <div className="flex gap-1">
                     <Button
@@ -288,11 +271,7 @@ export default function BrandKitsPage() {
                   onChange={(e) => {
                     const updatedKit = { ...selectedKit, name: e.target.value }
                     setSelectedKit(updatedKit)
-                    setBrandKits(
-                      brandKits.map((k) =>
-                        k.id === selectedKit.id ? updatedKit : k
-                      )
-                    )
+                    setBrandKits(brandKits.map((k) => (k.id === selectedKit.id ? updatedKit : k)))
                   }}
                   className="text-xl font-bold text-gray-900 focus:outline-none"
                   disabled={!isEditing}
@@ -308,18 +287,14 @@ export default function BrandKitsPage() {
                   }}
                   disabled={isSaving}
                 >
-                  {isSaving ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : null}
+                  {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   {isEditing ? 'Speichern' : 'Bearbeiten'}
                 </Button>
               </div>
 
               {/* Colors */}
               <div className="mb-8">
-                <h3 className="mb-4 text-sm font-medium text-gray-900">
-                  Farben
-                </h3>
+                <h3 className="mb-4 text-sm font-medium text-gray-900">Farben</h3>
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
                   {selectedKit.colors.map((color) => (
                     <ColorPicker
@@ -334,9 +309,7 @@ export default function BrandKitsPage() {
 
               {/* Fonts */}
               <div>
-                <h3 className="mb-4 text-sm font-medium text-gray-900">
-                  Schriften
-                </h3>
+                <h3 className="mb-4 text-sm font-medium text-gray-900">Schriften</h3>
                 <div className="space-y-4">
                   {selectedKit.fonts.map((font) => (
                     <div

@@ -2,13 +2,7 @@ import { NextResponse } from 'next/server'
 
 import { createClient } from '@/lib/supabase/server'
 
-const REQUIRED_TABLES = [
-  'projects',
-  'subscriptions',
-  'brand_kits',
-  'templates',
-  'api_keys',
-]
+const REQUIRED_TABLES = ['projects', 'subscriptions', 'brand_kits', 'templates', 'api_keys']
 
 export async function GET() {
   const supabase = await createClient()

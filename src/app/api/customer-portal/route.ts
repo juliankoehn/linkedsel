@@ -38,10 +38,7 @@ export async function POST() {
     } | null
 
     if (!sub?.lemon_customer_id) {
-      return NextResponse.json(
-        { error: 'No subscription found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'No subscription found' }, { status: 404 })
     }
 
     initLemonSqueezy()
@@ -51,27 +48,18 @@ export async function POST() {
 
     if (error) {
       console.error('LemonSqueezy customer error:', error)
-      return NextResponse.json(
-        { error: 'Failed to get customer portal' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Failed to get customer portal' }, { status: 500 })
     }
 
     const portalUrl = data?.data?.attributes?.urls?.customer_portal
 
     if (!portalUrl) {
-      return NextResponse.json(
-        { error: 'No portal URL available' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'No portal URL available' }, { status: 500 })
     }
 
     return NextResponse.json({ url: portalUrl })
   } catch (error) {
     console.error('Customer portal error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

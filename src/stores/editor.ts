@@ -122,16 +122,12 @@ interface EditorState {
 
   // Project persistence
   saveProject: () => Promise<{ id: string } | { error: string }>
-  loadProject: (
-    projectId: string
-  ) => Promise<{ success: true } | { error: string }>
+  loadProject: (projectId: string) => Promise<{ success: true } | { error: string }>
   serializeProject: () => ProjectData
   deserializeProject: (data: ProjectData) => void
 
   // AI Content
-  applyAIContent: (
-    slides: Array<{ headline: string; body: string; callToAction?: string }>
-  ) => void
+  applyAIContent: (slides: Array<{ headline: string; body: string; callToAction?: string }>) => void
 
   reset: () => void
 }
@@ -323,8 +319,7 @@ export const useEditorStore = create<EditorState>()(
 
       setCurrentSlide: (index: number) => {
         const { canvas, slides, currentSlideIndex } = get()
-        if (!canvas || index === currentSlideIndex || index >= slides.length)
-          return
+        if (!canvas || index === currentSlideIndex || index >= slides.length) return
 
         get().saveCurrentSlide()
         canvas.clear()
@@ -908,10 +903,7 @@ export const useEditorStore = create<EditorState>()(
 
       saveProject: async (): Promise<{ id: string } | { error: string }> => {
         const { projectId, projectName, isSaving, canvas, format } = get()
-        if (isSaving)
-          return projectId
-            ? { id: projectId }
-            : { error: 'Bereits beim Speichern' }
+        if (isSaving) return projectId ? { id: projectId } : { error: 'Bereits beim Speichern' }
 
         set({ isSaving: true })
 
@@ -929,8 +921,7 @@ export const useEditorStore = create<EditorState>()(
 
             if (!response.ok) {
               const errorData = await response.json().catch(() => ({}))
-              const errorMsg =
-                errorData.error || `Server Fehler (${response.status})`
+              const errorMsg = errorData.error || `Server Fehler (${response.status})`
               set({ isSaving: false })
               return { error: errorMsg }
             }
@@ -944,8 +935,7 @@ export const useEditorStore = create<EditorState>()(
 
             if (!response.ok) {
               const errorData = await response.json().catch(() => ({}))
-              const errorMsg =
-                errorData.error || `Server Fehler (${response.status})`
+              const errorMsg = errorData.error || `Server Fehler (${response.status})`
               set({ isSaving: false })
               return { error: errorMsg }
             }
@@ -1033,22 +1023,18 @@ export const useEditorStore = create<EditorState>()(
           console.error('Failed to save project:', error)
           set({ isSaving: false })
           return {
-            error:
-              error instanceof Error ? error.message : 'Unbekannter Fehler',
+            error: error instanceof Error ? error.message : 'Unbekannter Fehler',
           }
         }
       },
 
-      loadProject: async (
-        projectId: string
-      ): Promise<{ success: true } | { error: string }> => {
+      loadProject: async (projectId: string): Promise<{ success: true } | { error: string }> => {
         try {
           const response = await fetch(`/api/projects/${projectId}`)
 
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}))
-            const errorMsg =
-              errorData.error || `Server Fehler (${response.status})`
+            const errorMsg = errorData.error || `Server Fehler (${response.status})`
             return { error: errorMsg }
           }
 
@@ -1068,8 +1054,7 @@ export const useEditorStore = create<EditorState>()(
         } catch (error) {
           console.error('Failed to load project:', error)
           return {
-            error:
-              error instanceof Error ? error.message : 'Unbekannter Fehler',
+            error: error instanceof Error ? error.message : 'Unbekannter Fehler',
           }
         }
       },

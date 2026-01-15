@@ -86,20 +86,14 @@ export default function PricingPage() {
               )}
             >
               {tier.featured && (
-                <p className="text-brand-600 mb-4 text-sm font-semibold">
-                  Beliebteste Wahl
-                </p>
+                <p className="text-brand-600 mb-4 text-sm font-semibold">Beliebteste Wahl</p>
               )}
               <h2 className="text-2xl font-bold text-gray-900">{tier.name}</h2>
               <p className="mt-2 text-gray-600">{tier.description}</p>
 
               <div className="mt-6">
-                <span className="text-4xl font-bold text-gray-900">
-                  {tier.price}
-                </span>
-                {tier.period && (
-                  <span className="text-gray-600">{tier.period}</span>
-                )}
+                <span className="text-4xl font-bold text-gray-900">{tier.price}</span>
+                {tier.period && <span className="text-gray-600">{tier.period}</span>}
               </div>
 
               <ul className="mt-8 space-y-3">

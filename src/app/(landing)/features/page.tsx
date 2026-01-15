@@ -1,13 +1,4 @@
-import {
-  Zap,
-  Sparkles,
-  Palette,
-  FileText,
-  Image,
-  Layout,
-  Download,
-  Lock,
-} from 'lucide-react'
+import { Download, FileText, Image, Layout, Lock, Palette, Sparkles, Zap } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
@@ -15,8 +6,7 @@ import { Button } from '@/components/ui/button'
 
 export const metadata: Metadata = {
   title: 'Features',
-  description:
-    'Entdecke alle Features von LinkedSel - vom Editor bis zur AI-Unterstützung.',
+  description: 'Entdecke alle Features von LinkedSel - vom Editor bis zur AI-Unterstützung.',
 }
 
 const features = [
@@ -64,8 +54,7 @@ const features = [
   },
   {
     name: 'Datenschutz',
-    description:
-      'DSGVO-konform. Deine Daten gehören dir. Keine Weitergabe an Dritte.',
+    description: 'DSGVO-konform. Deine Daten gehören dir. Keine Weitergabe an Dritte.',
     icon: Lock,
   },
 ]
@@ -75,9 +64,7 @@ export default function FeaturesPage() {
     <div className="py-16 sm:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-gray-900">
-            Alles was du brauchst
-          </h1>
+          <h1 className="text-4xl font-bold tracking-tight text-gray-900">Alles was du brauchst</h1>
           <p className="mt-4 text-lg text-gray-600">
             Professionelle LinkedIn Carousels erstellen - ohne Design-Kenntnisse
           </p>
@@ -89,12 +76,8 @@ export default function FeaturesPage() {
               <div className="bg-brand-100 flex h-12 w-12 items-center justify-center rounded-lg">
                 <feature.icon className="text-brand-600 h-6 w-6" />
               </div>
-              <h3 className="mt-4 text-lg font-semibold text-gray-900">
-                {feature.name}
-              </h3>
-              <p className="mt-2 text-sm text-gray-600">
-                {feature.description}
-              </p>
+              <h3 className="mt-4 text-lg font-semibold text-gray-900">{feature.name}</h3>
+              <p className="mt-2 text-sm text-gray-600">{feature.description}</p>
             </div>
           ))}
         </div>
