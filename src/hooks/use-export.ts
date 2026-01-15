@@ -1,6 +1,6 @@
 'use client'
 
-import Konva from 'konva'
+import type Konva from 'konva'
 
 import { useSubscription } from '@/hooks/use-subscription'
 import { FORMAT_PRESETS, useCanvasStore } from '@/stores/canvas-store'
@@ -19,7 +19,10 @@ export function useExport() {
     const { slides } = useSlidesStore.getState()
     const { name, hasWatermark } = useProjectStore.getState()
 
-    const { jsPDF } = await import('jspdf')
+    // Dynamic imports to avoid SSR issues
+    const [{ jsPDF }, KonvaModule] = await Promise.all([import('jspdf'), import('konva')])
+    const Konva = KonvaModule.default
+
     const preset = FORMAT_PRESETS[format]
     const width = preset.width
     const height = preset.height
@@ -71,7 +74,7 @@ export function useExport() {
         layer.add(background)
 
         // Render elements
-        await renderSlideElements(layer, slide.elements)
+        await renderSlideElements(layer, slide.elements, Konva)
 
         // Add watermark if needed
         if (shouldShowWatermark) {
@@ -114,7 +117,11 @@ export function useExport() {
 }
 
 // Helper to render elements with async image loading
-async function renderSlideElements(layer: Konva.Layer, elements: CanvasElement[]): Promise<void> {
+async function renderSlideElements(
+  layer: Konva.Layer,
+  elements: CanvasElement[],
+  Konva: typeof import('konva').default
+): Promise<void> {
   const imagePromises: Promise<void>[] = []
 
   for (const element of elements) {

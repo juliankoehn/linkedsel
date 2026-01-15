@@ -1,6 +1,6 @@
 'use client'
 
-import Konva from 'konva'
+import type Konva from 'konva'
 import { Copy, Plus, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useRef } from 'react'
 
@@ -28,8 +28,12 @@ function SlidePreview({ slide, slideIndex, isActive, onClick }: SlidePreviewProp
   const previewHeight = previewWidth / aspectRatio
   const scale = previewWidth / preset.width
 
-  const renderPreview = useCallback(() => {
+  const renderPreview = useCallback(async () => {
     if (!containerRef.current) return
+
+    // Dynamic import to avoid SSR issues
+    const KonvaModule = await import('konva')
+    const Konva = KonvaModule.default
 
     // Initialize stage if needed
     if (!stageRef.current) {
@@ -59,9 +63,9 @@ function SlidePreview({ slide, slideIndex, isActive, onClick }: SlidePreviewProp
     layer.add(background)
 
     // Render elements
-    slide.elements.forEach((element) => {
-      renderElement(layer, element, scale)
-    })
+    for (const element of slide.elements) {
+      await renderElement(layer, element, scale)
+    }
 
     layer.batchDraw()
   }, [slide, previewHeight, scale])
@@ -137,7 +141,10 @@ function SlidePreview({ slide, slideIndex, isActive, onClick }: SlidePreviewProp
 }
 
 // Helper function to render element in preview
-function renderElement(layer: Konva.Layer, element: CanvasElement, scale: number) {
+async function renderElement(layer: Konva.Layer, element: CanvasElement, scale: number) {
+  const KonvaModule = await import('konva')
+  const Konva = KonvaModule.default
+
   const scaledProps = {
     x: element.x * scale,
     y: element.y * scale,

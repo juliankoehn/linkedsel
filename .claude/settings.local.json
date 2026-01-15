@@ -30,7 +30,9 @@
       "Bash(pnpm check:*)",
       "Bash(pnpm biome:*)",
       "Bash(pnpm check:fix:*)",
-      "Bash(pnpm remove:*)"
+      "Bash(pnpm remove:*)",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "Bash(lsof:*)"
     ]
   }
 }
