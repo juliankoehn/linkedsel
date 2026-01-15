@@ -1,6 +1,6 @@
 # LinkedSel - LinkedIn Carousel Generator
 
-Ein SaaS-Tool zum Erstellen professioneller LinkedIn Carousels mit KI-Unterstützung.
+A SaaS tool for creating professional LinkedIn carousels with AI support.
 
 ## Tech Stack
 
@@ -8,34 +8,34 @@ Ein SaaS-Tool zum Erstellen professioneller LinkedIn Carousels mit KI-Unterstüt
 - **Canvas:** Fabric.js 6
 - **Backend:** Next.js API Routes, Supabase (Auth + DB + Storage)
 - **Payments:** LemonSqueezy
-- **AI:** OpenAI / Anthropic (BYOK oder Pro-Plan)
+- **AI:** OpenAI / Anthropic (BYOK or Pro plan)
 
-## Voraussetzungen
+## Prerequisites
 
 - Node.js 18+
-- pnpm / npm / yarn
-- Supabase Account (kostenlos)
-- LemonSqueezy Account (für Payments)
+- pnpm
+- Supabase account (free tier available)
+- LemonSqueezy account (for payments)
 
 ## Setup
 
-### 1. Repository klonen
+### 1. Clone repository
 
 ```bash
 git clone https://github.com/juliankoehn/linkedsel.git
 cd linkedsel
-npm install
+pnpm install
 ```
 
-### 2. Umgebungsvariablen
+### 2. Environment variables
 
-Kopiere `.env.example` zu `.env.local`:
+Copy `.env.example` to `.env.local`:
 
 ```bash
 cp .env.example .env.local
 ```
 
-Fülle die Variablen aus:
+Fill in the variables:
 
 ```env
 # Supabase
@@ -50,10 +50,10 @@ LEMONSQUEEZY_WEBHOOK_SECRET=
 LEMONSQUEEZY_BYOK_VARIANT_ID=
 LEMONSQUEEZY_PRO_VARIANT_ID=
 
-# Encryption (generieren mit: openssl rand -hex 32)
+# Encryption (generate with: openssl rand -hex 32)
 ENCRYPTION_KEY=
 
-# AI (optional - nur für Pro-Plan Server-seitig)
+# AI (optional - only for Pro plan server-side)
 OPENAI_API_KEY=
 ANTHROPIC_API_KEY=
 
@@ -61,119 +61,119 @@ ANTHROPIC_API_KEY=
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-### 3. Supabase Setup
+### 3. Supabase setup
 
-#### Option A: Supabase CLI (empfohlen)
+#### Option A: Supabase CLI (recommended)
 
 ```bash
-# CLI installieren
-npm install -g supabase
+# Install CLI
+pnpm add -g supabase
 
 # Login
 supabase login
 
-# Projekt verknüpfen
+# Link project
 supabase link --project-ref YOUR_PROJECT_REF
 
-# Migrationen ausführen + Seed
+# Run migrations + seed
 supabase db reset
 ```
 
-#### Option B: Manuell im Supabase Dashboard
+#### Option B: Manual via Supabase Dashboard
 
-1. Gehe zu SQL Editor
-2. Führe nacheinander aus:
+1. Go to SQL Editor
+2. Execute in order:
    - `supabase/migrations/001_initial_schema.sql`
    - `supabase/migrations/002_storage_buckets.sql`
    - `supabase/migrations/003_add_lemon_customer_id.sql`
    - `supabase/seed.sql`
 
-### 4. LemonSqueezy Setup
+### 4. LemonSqueezy setup
 
-1. Erstelle einen Store auf [lemonsqueezy.com](https://lemonsqueezy.com)
-2. Erstelle zwei Produkte:
-   - **BYOK Plan** (z.B. 9€/Monat) - Nutzer bringen eigene API Keys
-   - **Pro Plan** (z.B. 29€/Monat) - Inkl. AI Credits
-3. Kopiere die Variant IDs in `.env.local`
-4. Webhook einrichten:
-   - URL: `https://deine-domain.com/api/webhooks/lemonsqueezy`
+1. Create a store on [lemonsqueezy.com](https://lemonsqueezy.com)
+2. Create two products:
+   - **BYOK Plan** (e.g. $9/month) - Users bring their own API keys
+   - **Pro Plan** (e.g. $29/month) - Includes AI credits
+3. Copy the variant IDs to `.env.local`
+4. Set up webhook:
+   - URL: `https://your-domain.com/api/webhooks/lemonsqueezy`
    - Events: `subscription_created`, `subscription_updated`, `subscription_cancelled`, `subscription_payment_success`
-   - Secret in `LEMONSQUEEZY_WEBHOOK_SECRET` eintragen
+   - Add secret to `LEMONSQUEEZY_WEBHOOK_SECRET`
 
-### 5. Encryption Key generieren
+### 5. Generate encryption key
 
 ```bash
 openssl rand -hex 32
 ```
 
-Diesen Wert als `ENCRYPTION_KEY` eintragen.
+Add this value as `ENCRYPTION_KEY`.
 
-### 6. Development Server starten
+### 6. Start development server
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
-Öffne [http://localhost:3000](http://localhost:3000)
+Open [http://localhost:3000](http://localhost:3000)
 
-## Projektstruktur
+## Project Structure
 
 ```
 src/
 ├── app/
 │   ├── (app)/           # Authenticated routes
-│   │   ├── dashboard/   # Projekt-Übersicht
-│   │   ├── editor/      # Canvas Editor
-│   │   ├── templates/   # Template-Galerie
-│   │   ├── brand-kits/  # Brand Kit Manager
-│   │   └── settings/    # Account & API Keys
+│   │   ├── dashboard/   # Project overview
+│   │   ├── editor/      # Canvas editor
+│   │   ├── templates/   # Template gallery
+│   │   ├── brand-kits/  # Brand kit manager
+│   │   └── settings/    # Account & API keys
 │   ├── (landing)/       # Public pages
-│   ├── api/             # API Routes
+│   ├── api/             # API routes
 │   └── auth/            # Auth callbacks
 ├── components/
 │   ├── ui/              # shadcn/ui components
-│   ├── editor/          # Editor-spezifische Komponenten
-│   └── landing/         # Landing page Komponenten
-├── hooks/               # Custom React Hooks
-├── lib/                 # Utilities & Services
+│   ├── editor/          # Editor-specific components
+│   └── landing/         # Landing page components
+├── hooks/               # Custom React hooks
+├── lib/                 # Utilities & services
 ├── stores/              # Zustand stores
 └── types/               # TypeScript types
 ```
 
 ## Features
 
-- **Canvas Editor** - Drag & Drop, Text, Shapes, Bilder
-- **Templates** - 6 vorgefertigte Templates (4 Free, 2 Premium)
-- **AI Generation** - Inhalte per KI generieren (OpenAI/Anthropic)
-- **Brand Kits** - Farben & Fonts speichern
-- **PDF Export** - Hochauflösender Export (Watermark für Free-User)
-- **Subscriptions** - BYOK und Pro Plans via LemonSqueezy
+- **Canvas Editor** - Drag & drop, text, shapes, images
+- **Templates** - 6 pre-built templates (4 free, 2 premium)
+- **AI Generation** - Generate content via AI (OpenAI/Anthropic)
+- **Brand Kits** - Save colors & fonts
+- **PDF Export** - High-resolution export (watermark for free users)
+- **Subscriptions** - BYOK and Pro plans via LemonSqueezy
 
 ## Scripts
 
 ```bash
-npm run dev      # Development server
-npm run build    # Production build
-npm run start    # Production server
-npm run lint     # ESLint
-npm run format   # Prettier
+pnpm dev       # Development server
+pnpm build     # Production build
+pnpm start     # Production server
+pnpm lint      # ESLint
+pnpm format    # Prettier
 ```
 
 ## Deployment
 
-### Vercel (empfohlen)
+### Vercel (recommended)
 
-1. Repo mit Vercel verbinden
-2. Environment Variables setzen
-3. Deployen
+1. Connect repo to Vercel
+2. Set environment variables
+3. Deploy
 
-### Andere Plattformen
+### Other platforms
 
 ```bash
-npm run build
-npm run start
+pnpm build
+pnpm start
 ```
 
-## Lizenz
+## License
 
 MIT
