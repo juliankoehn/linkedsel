@@ -1,10 +1,12 @@
 # Supabase CLI config
-# Minimal config for remote migrations
+project_id = ""
 
 [api]
 enabled = false
+port = 54321
 
 [db]
+port = 54322
 major_version = 15
 
 [studio]

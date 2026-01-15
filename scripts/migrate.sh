@@ -14,6 +14,9 @@ fi
 
 echo "🔄 Running database migrations..."
 
+# Set project_id in config.toml
+sed -i "s/project_id = \"\"/project_id = \"$SUPABASE_PROJECT_REF\"/" supabase/config.toml
+
 # Link to project
 npx supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$POSTGRES_PASSWORD"
 
