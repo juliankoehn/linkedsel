@@ -3,7 +3,7 @@
 import type Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import { ChevronLeft, ChevronRight, Copy, Minus, Plus, Square, Trash2 } from 'lucide-react'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Layer, Rect, Stage } from 'react-konva'
 
 import { Button } from '@/components/ui/button'
@@ -133,6 +133,11 @@ export function KonvaCanvas() {
   const containerRef = useRef<HTMLDivElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const selectionStartRef = useRef<{ x: number; y: number; slideIndex: number } | null>(null)
+  const panStartRef = useRef<{ x: number; scrollLeft: number } | null>(null)
+
+  // Pan state
+  const [isPanning, setIsPanning] = useState(false)
+  const [isSpacePressed, setIsSpacePressed] = useState(false)
 
   // Stores
   const { setStageRef, getDimensions, snapEnabled, setGuidelines, clearGuidelines, zoom, setZoom } =
@@ -629,7 +634,7 @@ export function KonvaCanvas() {
     setCurrentSlide,
   ])
 
-  // Wheel handler for horizontal scroll and zoom
+  // Wheel handler for zoom and horizontal scroll
   useEffect(() => {
     const container = scrollContainerRef.current
     if (!container) return
@@ -639,16 +644,82 @@ export function KonvaCanvas() {
       const ctrlKey = isMac ? e.metaKey : e.ctrlKey
 
       if (ctrlKey) {
+        // Zoom with Ctrl/Cmd + wheel
         e.preventDefault()
         const delta = e.deltaY > 0 ? 0.9 : 1.1
         const newZoom = Math.max(0.1, Math.min(3, zoom * delta))
         setZoom(newZoom)
+      } else {
+        // Convert vertical scroll to horizontal scroll for easier navigation
+        if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && e.deltaX === 0) {
+          e.preventDefault()
+          container.scrollLeft += e.deltaY
+        }
       }
     }
 
     container.addEventListener('wheel', handleWheel, { passive: false })
     return () => container.removeEventListener('wheel', handleWheel)
   }, [zoom, setZoom])
+
+  // Space + drag panning
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && !e.repeat && !editingTextId) {
+        e.preventDefault()
+        setIsSpacePressed(true)
+      }
+    }
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        setIsSpacePressed(false)
+        setIsPanning(false)
+        panStartRef.current = null
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('keyup', handleKeyUp)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keyup', handleKeyUp)
+    }
+  }, [editingTextId])
+
+  const handlePanStart = useCallback(
+    (e: React.MouseEvent) => {
+      if (isSpacePressed || e.button === 1) {
+        e.preventDefault()
+        setIsPanning(true)
+        const container = scrollContainerRef.current
+        if (container) {
+          panStartRef.current = {
+            x: e.clientX,
+            scrollLeft: container.scrollLeft,
+          }
+        }
+      }
+    },
+    [isSpacePressed]
+  )
+
+  const handlePanMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isPanning || !panStartRef.current) return
+      const container = scrollContainerRef.current
+      if (container) {
+        const dx = e.clientX - panStartRef.current.x
+        container.scrollLeft = panStartRef.current.scrollLeft - dx
+      }
+    },
+    [isPanning]
+  )
+
+  const handlePanEnd = useCallback(() => {
+    setIsPanning(false)
+    panStartRef.current = null
+  }, [])
 
   // Z-order and context menu callbacks
   const bringToFront = useCallback(() => {
@@ -722,13 +793,19 @@ export function KonvaCanvas() {
           {/* Horizontal scrolling canvas area */}
           <div
             ref={scrollContainerRef}
-            className="flex flex-1 items-center gap-0 overflow-x-auto bg-gray-100"
+            className={`flex flex-1 items-center gap-0 overflow-x-auto bg-gray-100 ${
+              isSpacePressed || isPanning ? 'cursor-grab' : ''
+            } ${isPanning ? 'cursor-grabbing' : ''}`}
             style={{
               paddingLeft: '40px',
               paddingRight: '40px',
               paddingTop: `${TOOLBAR_HEIGHT + 20}px`,
               paddingBottom: '80px',
             }}
+            onMouseDown={handlePanStart}
+            onMouseMove={handlePanMove}
+            onMouseUp={handlePanEnd}
+            onMouseLeave={handlePanEnd}
           >
             {slides.map((slide, slideIndex) => {
               const isCurrentSlide = slideIndex === currentSlideIndex
