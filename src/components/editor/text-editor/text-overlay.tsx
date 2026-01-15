@@ -2,7 +2,7 @@
 
 import type Konva from 'konva'
 import { useCallback, useEffect, useRef } from 'react'
-import { useCanvasStore } from '@/stores/canvas-store'
+import { DISPLAY_SCALE_FACTOR, useCanvasStore } from '@/stores/canvas-store'
 import { useSelectionStore } from '@/stores/selection-store'
 import { type TextElement, useSlidesStore } from '@/stores/slides-store'
 
@@ -53,9 +53,12 @@ export function TextOverlay({ stageRef }: TextOverlayProps) {
   const container = stage.container()
   const containerRect = container.getBoundingClientRect()
 
+  // Calculate scale (same as Stage uses)
+  const scale = DISPLAY_SCALE_FACTOR * zoom
+
   // Calculate position relative to the stage
-  const x = element.x * zoom + containerRect.left
-  const y = element.y * zoom + containerRect.top
+  const x = element.x * scale + containerRect.left
+  const y = element.y * scale + containerRect.top
 
   return (
     <textarea
@@ -65,9 +68,9 @@ export function TextOverlay({ stageRef }: TextOverlayProps) {
         position: 'fixed',
         left: x,
         top: y,
-        width: element.width * zoom,
-        minHeight: element.height * zoom,
-        fontSize: element.fontSize * zoom,
+        width: element.width * scale,
+        minHeight: element.height * scale,
+        fontSize: element.fontSize * scale,
         fontFamily: element.fontFamily,
         fontWeight: element.fontWeight,
         fontStyle: element.fontStyle,
