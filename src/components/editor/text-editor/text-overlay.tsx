@@ -46,26 +46,22 @@ export function TextOverlay({ stageRef }: TextOverlayProps) {
     return null
   }
 
-  const stage = stageRef.current
-  if (!stage) return null
-
-  // Get the stage container's position
-  const container = stage.container()
-  const containerRect = container.getBoundingClientRect()
+  if (!stageRef.current) return null
 
   // Calculate scale (same as Stage uses)
   const scale = DISPLAY_SCALE_FACTOR * zoom
 
-  // Calculate position relative to the stage
-  const x = element.x * scale + containerRect.left
-  const y = element.y * scale + containerRect.top
+  // Position is relative to the canvas wrapper (parent div with position: relative)
+  // since we use position: absolute
+  const x = element.x * scale
+  const y = element.y * scale
 
   return (
     <textarea
       ref={textareaRef}
       defaultValue={element.text}
       style={{
-        position: 'fixed',
+        position: 'absolute',
         left: x,
         top: y,
         width: element.width * scale,
