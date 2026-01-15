@@ -55,7 +55,7 @@ export function AlignmentToolbar() {
               <AlignStartHorizontal className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Align left</TooltipContent>
+          <TooltipContent>Links ausrichten</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -69,7 +69,7 @@ export function AlignmentToolbar() {
               <AlignCenterHorizontal className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Align center</TooltipContent>
+          <TooltipContent>Zentriert ausrichten</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -83,7 +83,7 @@ export function AlignmentToolbar() {
               <AlignEndHorizontal className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Align right</TooltipContent>
+          <TooltipContent>Rechts ausrichten</TooltipContent>
         </Tooltip>
 
         <div className="mx-1 h-4 w-px bg-gray-200" />
@@ -100,7 +100,7 @@ export function AlignmentToolbar() {
               <AlignStartVertical className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Align top</TooltipContent>
+          <TooltipContent>Oben ausrichten</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -114,7 +114,7 @@ export function AlignmentToolbar() {
               <AlignCenterVertical className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Align middle</TooltipContent>
+          <TooltipContent>Mittig ausrichten</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -128,7 +128,7 @@ export function AlignmentToolbar() {
               <AlignEndVertical className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Align bottom</TooltipContent>
+          <TooltipContent>Unten ausrichten</TooltipContent>
         </Tooltip>
 
         {/* Distribute - only show if 3+ elements */}
@@ -147,7 +147,7 @@ export function AlignmentToolbar() {
                   <AlignHorizontalSpaceAround className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Distribute horizontally</TooltipContent>
+              <TooltipContent>Horizontal verteilen</TooltipContent>
             </Tooltip>
 
             <Tooltip>
@@ -161,7 +161,7 @@ export function AlignmentToolbar() {
                   <AlignVerticalSpaceAround className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Distribute vertically</TooltipContent>
+              <TooltipContent>Vertikal verteilen</TooltipContent>
             </Tooltip>
           </>
         )}

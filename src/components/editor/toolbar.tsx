@@ -28,6 +28,7 @@ import {
   Underline,
   Undo,
 } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { useRef, useState } from 'react'
 import { AlignmentToolbar } from '@/components/editor/alignment-toolbar'
 import { ColorButton } from '@/components/editor/color-picker'
@@ -39,6 +40,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useExport } from '@/hooks/use-export'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -60,6 +62,51 @@ import {
   type TextElement,
   useSlidesStore,
 } from '@/stores/slides-store'
+
+// Helper component for tooltip-wrapped buttons
+interface TooltipButtonProps {
+  tooltip: string
+  shortcut?: string
+  children: ReactNode
+  onClick?: () => void
+  disabled?: boolean
+  className?: string
+  variant?: 'ghost' | 'outline' | 'default'
+  size?: 'icon' | 'sm' | 'default'
+}
+
+function TooltipButton({
+  tooltip,
+  shortcut,
+  children,
+  onClick,
+  disabled,
+  className,
+  variant = 'ghost',
+  size = 'icon',
+}: TooltipButtonProps) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant={variant}
+          size={size}
+          onClick={onClick}
+          disabled={disabled}
+          className={className}
+        >
+          {children}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>
+          {tooltip}
+          {shortcut && <span className="ml-2 text-gray-400">{shortcut}</span>}
+        </p>
+      </TooltipContent>
+    </Tooltip>
+  )
+}
 
 interface EditorToolbarProps {
   onOpenAIPanel?: () => void
@@ -222,14 +269,16 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
 
   // Undo/Redo
   const undo = () => {
-    const previousState = useHistoryStore.getState().undo()
+    const currentSlides = useSlidesStore.getState().slides
+    const previousState = useHistoryStore.getState().undo(currentSlides)
     if (previousState) {
       useSlidesStore.getState().setSlides(previousState)
     }
   }
 
   const redo = () => {
-    const nextState = useHistoryStore.getState().redo()
+    const currentSlides = useSlidesStore.getState().slides
+    const nextState = useHistoryStore.getState().redo(currentSlides)
     if (nextState) {
       useSlidesStore.getState().setSlides(nextState)
     }
@@ -357,268 +406,274 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
   }
 
   return (
-    <div className="flex flex-col border-b">
-      {/* Top row: Project name and save */}
-      <div className="flex items-center justify-between border-b px-4 py-2">
-        <div className="flex items-center gap-2">
-          {isEditingName ? (
-            <div className="flex items-center gap-1">
-              <input
-                ref={nameInputRef}
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                onBlur={handleNameSubmit}
-                onKeyDown={handleNameKeyDown}
-                className="rounded border px-2 py-1 text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              />
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleNameSubmit}>
-                <Check className="h-3 w-3" />
-              </Button>
-            </div>
-          ) : (
-            <button
-              onClick={handleNameEdit}
-              className="flex items-center gap-1 rounded px-2 py-1 text-sm font-medium hover:bg-gray-100"
-            >
-              {name}
-              <Pencil className="h-3 w-3 text-gray-400" />
-            </button>
-          )}
-          {isDirty && <span className="text-xs text-gray-400">Unsaved</span>}
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Format selector */}
-          <select
-            value={format}
-            onChange={(e) => setFormat(e.target.value as FormatPreset)}
-            className="rounded border px-2 py-1.5 text-sm"
-          >
-            {Object.entries(FORMAT_PRESETS).map(([key, preset]) => (
-              <option key={key} value={key}>
-                {preset.name} ({preset.ratio})
-              </option>
-            ))}
-          </select>
-
-          <Button variant="outline" size="sm" onClick={handleSave} disabled={isSaving}>
-            {isSaving ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+    <TooltipProvider delayDuration={300}>
+      <div className="flex flex-col border-b">
+        {/* Top row: Project name and save */}
+        <div className="flex items-center justify-between border-b px-4 py-2">
+          <div className="flex items-center gap-2">
+            {isEditingName ? (
+              <div className="flex items-center gap-1">
+                <input
+                  ref={nameInputRef}
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  onBlur={handleNameSubmit}
+                  onKeyDown={handleNameKeyDown}
+                  className="rounded border px-2 py-1 text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleNameSubmit}>
+                  <Check className="h-3 w-3" />
+                </Button>
+              </div>
             ) : (
-              <Save className="mr-2 h-4 w-4" />
+              <button
+                onClick={handleNameEdit}
+                className="flex items-center gap-1 rounded px-2 py-1 text-sm font-medium hover:bg-gray-100"
+              >
+                {name}
+                <Pencil className="h-3 w-3 text-gray-400" />
+              </button>
             )}
-            Save
-          </Button>
-
-          {onOpenAIPanel && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onOpenAIPanel}
-              className="border-purple-200 text-purple-600 hover:bg-purple-50"
-            >
-              <Sparkles className="mr-2 h-4 w-4" />
-              AI Content
-            </Button>
-          )}
-
-          <Button onClick={exportPDF}>
-            <Download className="mr-2 h-4 w-4" />
-            Export PDF
-          </Button>
-        </div>
-      </div>
-
-      {/* Bottom row: Tools */}
-      <div className="flex items-center justify-between px-4 py-2">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={handleFileChange}
-          className="hidden"
-        />
-
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" onClick={addText} title="Add text">
-            <Type className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={handleImageUpload} title="Upload image">
-            <ImageIcon className="h-4 w-4" />
-          </Button>
-          <IconPicker onSelectIcon={addIcon} />
-
-          <div className="mx-1 h-6 w-px bg-gray-200" />
-
-          {/* Basic Shapes */}
-          <Button variant="ghost" size="icon" onClick={() => addShape('rect')} title="Rectangle">
-            <Square className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => addShape('circle')} title="Circle">
-            <Circle className="h-4 w-4" />
-          </Button>
-
-          {/* More Shapes Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-1 px-2" title="More shapes">
-                <Triangle className="h-4 w-4" />
-                <ChevronDown className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={() => addShape('triangle')}>
-                <Triangle className="mr-2 h-4 w-4" />
-                Triangle
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => addShape('star')}>
-                <Star className="mr-2 h-4 w-4" />
-                Star
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => addShape('polygon', 5)}>
-                <Pentagon className="mr-2 h-4 w-4" />
-                Pentagon
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => addShape('polygon', 6)}>
-                <Hexagon className="mr-2 h-4 w-4" />
-                Hexagon
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <div className="mx-1 h-6 w-px bg-gray-200" />
-
-          {/* Lines & Arrows */}
-          <Button variant="ghost" size="icon" onClick={() => addShape('line')} title="Line">
-            <Minus className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => addShape('arrow')} title="Arrow">
-            <MoveRight className="h-4 w-4" />
-          </Button>
-
-          <div className="mx-2 h-6 w-px bg-gray-200" />
-
-          <div className="flex items-center gap-1" title="Background color">
-            <Palette className="text-muted-foreground h-4 w-4" />
-            <ColorButton
-              value={currentSlide?.backgroundColor || '#ffffff'}
-              onChange={handleBackgroundChange}
-            />
+            {isDirty && <span className="text-xs text-gray-400">Unsaved</span>}
           </div>
 
-          {selectedElement && (
-            <>
-              <div className="mx-2 h-6 w-px bg-gray-200" />
+          <div className="flex items-center gap-2">
+            {/* Format selector */}
+            <select
+              value={format}
+              onChange={(e) => setFormat(e.target.value as FormatPreset)}
+              className="rounded border px-2 py-1.5 text-sm"
+            >
+              {Object.entries(FORMAT_PRESETS).map(([key, preset]) => (
+                <option key={key} value={key}>
+                  {preset.name} ({preset.ratio})
+                </option>
+              ))}
+            </select>
 
-              <div className="flex items-center gap-1" title="Fill color">
-                <span className="text-muted-foreground text-xs">Color:</span>
-                <ColorButton value={fill} onChange={handleFillChange} />
-              </div>
-
-              {isTextElement && (
-                <>
-                  <div className="mx-2 h-6 w-px bg-gray-200" />
-
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => handleFontSizeChange(-4)}
-                      title="Decrease font size"
-                    >
-                      <Minus className="h-3 w-3" />
-                    </Button>
-                    <span className="w-8 text-center text-sm">{fontSize}</span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => handleFontSizeChange(4)}
-                      title="Increase font size"
-                    >
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                  </div>
-
-                  <div className="mx-1 h-6 w-px bg-gray-200" />
-
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn('h-7 w-7', fontWeight === 'bold' && 'bg-accent')}
-                    onClick={toggleBold}
-                    title="Bold"
-                  >
-                    <Bold className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn('h-7 w-7', fontStyle === 'italic' && 'bg-accent')}
-                    onClick={toggleItalic}
-                    title="Italic"
-                  >
-                    <Italic className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn('h-7 w-7', textDecoration === 'underline' && 'bg-accent')}
-                    onClick={toggleUnderline}
-                    title="Underline"
-                  >
-                    <Underline className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn('h-7 w-7', textDecoration === 'line-through' && 'bg-accent')}
-                    onClick={toggleStrikethrough}
-                    title="Strikethrough"
-                  >
-                    <Strikethrough className="h-3 w-3" />
-                  </Button>
-                </>
+            <Button variant="outline" size="sm" onClick={handleSave} disabled={isSaving}>
+              {isSaving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
               )}
-            </>
-          )}
+              Save
+            </Button>
 
-          {/* Alignment toolbar - shows when 2+ elements selected */}
-          <AlignmentToolbar />
+            {onOpenAIPanel && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onOpenAIPanel}
+                className="border-purple-200 text-purple-600 hover:bg-purple-50"
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                AI Content
+              </Button>
+            )}
 
-          <div className="mx-2 h-6 w-px bg-gray-200" />
+            <Button onClick={exportPDF}>
+              <Download className="mr-2 h-4 w-4" />
+              Export PDF
+            </Button>
+          </div>
+        </div>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={undo}
-            disabled={!canUndo()}
-            title="Undo (Ctrl+Z)"
-          >
-            <Undo className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={redo}
-            disabled={!canRedo()}
-            title="Redo (Ctrl+Y)"
-          >
-            <Redo className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={deleteSelected}
-            disabled={selectedIds.length === 0}
-            title="Delete (Del)"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+        {/* Bottom row: Tools */}
+        <div className="flex items-center justify-between px-4 py-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+
+          <div className="flex items-center gap-1">
+            <TooltipButton tooltip="Text hinzufügen" shortcut="T" onClick={addText}>
+              <Type className="h-4 w-4" />
+            </TooltipButton>
+            <TooltipButton tooltip="Bild hochladen" onClick={handleImageUpload}>
+              <ImageIcon className="h-4 w-4" />
+            </TooltipButton>
+            <IconPicker onSelectIcon={addIcon} />
+
+            <div className="mx-1 h-6 w-px bg-gray-200" />
+
+            {/* Basic Shapes */}
+            <TooltipButton tooltip="Rechteck" onClick={() => addShape('rect')}>
+              <Square className="h-4 w-4" />
+            </TooltipButton>
+            <TooltipButton tooltip="Kreis" onClick={() => addShape('circle')}>
+              <Circle className="h-4 w-4" />
+            </TooltipButton>
+
+            {/* More Shapes Dropdown */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="gap-1 px-2">
+                      <Triangle className="h-4 w-4" />
+                      <ChevronDown className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuItem onClick={() => addShape('triangle')}>
+                      <Triangle className="mr-2 h-4 w-4" />
+                      Dreieck
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addShape('star')}>
+                      <Star className="mr-2 h-4 w-4" />
+                      Stern
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addShape('polygon', 5)}>
+                      <Pentagon className="mr-2 h-4 w-4" />
+                      Fünfeck
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => addShape('polygon', 6)}>
+                      <Hexagon className="mr-2 h-4 w-4" />
+                      Sechseck
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Weitere Formen</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <div className="mx-1 h-6 w-px bg-gray-200" />
+
+            {/* Lines & Arrows */}
+            <TooltipButton tooltip="Linie" onClick={() => addShape('line')}>
+              <Minus className="h-4 w-4" />
+            </TooltipButton>
+            <TooltipButton tooltip="Pfeil" onClick={() => addShape('arrow')}>
+              <MoveRight className="h-4 w-4" />
+            </TooltipButton>
+
+            <div className="mx-2 h-6 w-px bg-gray-200" />
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1">
+                  <Palette className="text-muted-foreground h-4 w-4" />
+                  <ColorButton
+                    value={currentSlide?.backgroundColor || '#ffffff'}
+                    onChange={handleBackgroundChange}
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Hintergrundfarbe</p>
+              </TooltipContent>
+            </Tooltip>
+
+            {selectedElement && (
+              <>
+                <div className="mx-2 h-6 w-px bg-gray-200" />
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1">
+                      <span className="text-muted-foreground text-xs">Farbe:</span>
+                      <ColorButton value={fill} onChange={handleFillChange} />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Füllfarbe</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                {isTextElement && (
+                  <>
+                    <div className="mx-2 h-6 w-px bg-gray-200" />
+
+                    <div className="flex items-center gap-1">
+                      <TooltipButton
+                        tooltip="Schriftgröße verkleinern"
+                        onClick={() => handleFontSizeChange(-4)}
+                        className="h-7 w-7"
+                      >
+                        <Minus className="h-3 w-3" />
+                      </TooltipButton>
+                      <span className="w-8 text-center text-sm">{fontSize}</span>
+                      <TooltipButton
+                        tooltip="Schriftgröße vergrößern"
+                        onClick={() => handleFontSizeChange(4)}
+                        className="h-7 w-7"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </TooltipButton>
+                    </div>
+
+                    <div className="mx-1 h-6 w-px bg-gray-200" />
+
+                    <TooltipButton
+                      tooltip="Fett"
+                      shortcut="⌘B"
+                      onClick={toggleBold}
+                      className={cn('h-7 w-7', fontWeight === 'bold' && 'bg-accent')}
+                    >
+                      <Bold className="h-3 w-3" />
+                    </TooltipButton>
+                    <TooltipButton
+                      tooltip="Kursiv"
+                      shortcut="⌘I"
+                      onClick={toggleItalic}
+                      className={cn('h-7 w-7', fontStyle === 'italic' && 'bg-accent')}
+                    >
+                      <Italic className="h-3 w-3" />
+                    </TooltipButton>
+                    <TooltipButton
+                      tooltip="Unterstrichen"
+                      shortcut="⌘U"
+                      onClick={toggleUnderline}
+                      className={cn('h-7 w-7', textDecoration === 'underline' && 'bg-accent')}
+                    >
+                      <Underline className="h-3 w-3" />
+                    </TooltipButton>
+                    <TooltipButton
+                      tooltip="Durchgestrichen"
+                      onClick={toggleStrikethrough}
+                      className={cn('h-7 w-7', textDecoration === 'line-through' && 'bg-accent')}
+                    >
+                      <Strikethrough className="h-3 w-3" />
+                    </TooltipButton>
+                  </>
+                )}
+              </>
+            )}
+
+            {/* Alignment toolbar - shows when 2+ elements selected */}
+            <AlignmentToolbar />
+
+            <div className="mx-2 h-6 w-px bg-gray-200" />
+
+            <TooltipButton tooltip="Rückgängig" shortcut="⌘Z" onClick={undo} disabled={!canUndo()}>
+              <Undo className="h-4 w-4" />
+            </TooltipButton>
+            <TooltipButton
+              tooltip="Wiederherstellen"
+              shortcut="⌘⇧Z"
+              onClick={redo}
+              disabled={!canRedo()}
+            >
+              <Redo className="h-4 w-4" />
+            </TooltipButton>
+            <TooltipButton
+              tooltip="Löschen"
+              shortcut="⌫"
+              onClick={deleteSelected}
+              disabled={selectedIds.length === 0}
+            >
+              <Trash2 className="h-4 w-4" />
+            </TooltipButton>
+          </div>
         </div>
       </div>
-    </div>
+    </TooltipProvider>
   )
 }

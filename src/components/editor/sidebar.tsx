@@ -15,6 +15,9 @@ import { cn } from '@/lib/utils'
 import { FORMAT_PRESETS, useCanvasStore } from '@/stores/canvas-store'
 import { type CanvasElement, type Slide, useSlidesStore } from '@/stores/slides-store'
 
+// Global image cache to prevent reloading
+const imageCache = new Map<string, HTMLImageElement>()
+
 interface SlidePreviewProps {
   slide: Slide
   slideIndex: number
@@ -270,28 +273,43 @@ async function renderElement(layer: Konva.Layer, element: CanvasElement, scale: 
       break
     }
     case 'image': {
-      // For preview, show a placeholder rect for images
-      const placeholder = new Konva.Rect({
-        ...scaledProps,
-        fill: '#f0f0f0',
-        stroke: '#e0e0e0',
-        strokeWidth: 1,
-      })
-      layer.add(placeholder)
+      const cachedImage = imageCache.get(element.src)
 
-      // Try to load the actual image
-      const imageObj = new window.Image()
-      imageObj.crossOrigin = 'anonymous'
-      imageObj.onload = () => {
+      if (cachedImage && cachedImage.complete) {
+        // Use cached image directly
         const img = new Konva.Image({
           ...scaledProps,
-          image: imageObj,
+          image: cachedImage,
         })
-        placeholder.destroy()
         layer.add(img)
-        layer.batchDraw()
+      } else {
+        // Show placeholder and load image
+        const placeholder = new Konva.Rect({
+          ...scaledProps,
+          fill: '#f0f0f0',
+          stroke: '#e0e0e0',
+          strokeWidth: 1,
+        })
+        layer.add(placeholder)
+
+        // Only load if not already loading
+        if (!imageCache.has(element.src)) {
+          const imageObj = new window.Image()
+          imageObj.crossOrigin = 'anonymous'
+          imageCache.set(element.src, imageObj)
+
+          imageObj.onload = () => {
+            const img = new Konva.Image({
+              ...scaledProps,
+              image: imageObj,
+            })
+            placeholder.destroy()
+            layer.add(img)
+            layer.batchDraw()
+          }
+          imageObj.src = element.src
+        }
       }
-      imageObj.src = element.src
       break
     }
   }

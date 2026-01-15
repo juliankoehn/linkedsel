@@ -1,10 +1,27 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
+
+// Debounce helper
+function useDebouncedCallback<T extends (...args: any[]) => void>(callback: T, delay: number): T {
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  return useCallback(
+    ((...args: Parameters<T>) => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+      timeoutRef.current = setTimeout(() => {
+        callback(...args)
+      }, delay)
+    }) as T,
+    [callback, delay]
+  )
+}
 
 // Color presets for LinkedIn content
 const COLOR_PALETTES = {
@@ -47,17 +64,22 @@ export function ColorPicker({
 }: ColorPickerProps) {
   const [open, setOpen] = useState(false)
   const [inputValue, setInputValue] = useState(value)
+  const [previewColor, setPreviewColor] = useState(value)
 
   const handleColorChange = useCallback(
     (color: string) => {
       onChange(color)
       setInputValue(color)
+      setPreviewColor(color)
       if (onRecentColorAdd && !recentColors.includes(color)) {
         onRecentColorAdd(color)
       }
     },
     [onChange, onRecentColorAdd, recentColors]
   )
+
+  // Debounced version for native color picker (fires on every pixel move)
+  const debouncedOnChange = useDebouncedCallback(onChange, 50)
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,9 +95,12 @@ export function ColorPicker({
 
   const handleNativeColorChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      handleColorChange(e.target.value)
+      const color = e.target.value
+      setPreviewColor(color)
+      setInputValue(color)
+      debouncedOnChange(color)
     },
-    [handleColorChange]
+    [debouncedOnChange]
   )
 
   return (
@@ -88,8 +113,8 @@ export function ColorPicker({
           role="combobox"
           aria-expanded={open}
         >
-          <div className="h-4 w-4 rounded border" style={{ backgroundColor: value }} />
-          <span className="flex-1 truncate text-left text-xs">{label || value}</span>
+          <div className="h-4 w-4 rounded border" style={{ backgroundColor: previewColor }} />
+          <span className="flex-1 truncate text-left text-xs">{label || previewColor}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-64 p-3" align="start">
@@ -170,6 +195,18 @@ interface ColorButtonProps {
 }
 
 export function ColorButton({ value, onChange, className }: ColorButtonProps) {
+  const [previewColor, setPreviewColor] = useState(value)
+  const debouncedOnChange = useDebouncedCallback(onChange, 50)
+
+  const handleNativeChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const color = e.target.value
+      setPreviewColor(color)
+      debouncedOnChange(color)
+    },
+    [debouncedOnChange]
+  )
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -177,7 +214,7 @@ export function ColorButton({ value, onChange, className }: ColorButtonProps) {
           className={cn('h-7 w-7 rounded border border-gray-200 p-0.5', className)}
           title={value}
         >
-          <div className="h-full w-full rounded" style={{ backgroundColor: value }} />
+          <div className="h-full w-full rounded" style={{ backgroundColor: previewColor }} />
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-64 p-3" align="start">
@@ -194,7 +231,10 @@ export function ColorButton({ value, onChange, className }: ColorButtonProps) {
                       value === color && 'ring-2 ring-primary ring-offset-1'
                     )}
                     style={{ backgroundColor: color }}
-                    onClick={() => onChange(color)}
+                    onClick={() => {
+                      setPreviewColor(color)
+                      onChange(color)
+                    }}
                     title={color}
                   />
                 ))}
@@ -205,8 +245,8 @@ export function ColorButton({ value, onChange, className }: ColorButtonProps) {
             <p className="mb-1.5 text-xs font-medium text-muted-foreground">Custom</p>
             <input
               type="color"
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
+              value={previewColor}
+              onChange={handleNativeChange}
               className="h-8 w-full cursor-pointer rounded border p-0.5"
             />
           </div>

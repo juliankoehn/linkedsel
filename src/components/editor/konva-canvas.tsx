@@ -420,7 +420,8 @@ export function KonvaCanvas() {
       // Undo: Ctrl/Cmd + Z
       if (ctrlKey && e.key === 'z' && !e.shiftKey) {
         e.preventDefault()
-        const previousState = useHistoryStore.getState().undo()
+        const currentSlides = useSlidesStore.getState().slides
+        const previousState = useHistoryStore.getState().undo(currentSlides)
         if (previousState) {
           useSlidesStore.getState().setSlides(previousState)
         }
@@ -430,7 +431,8 @@ export function KonvaCanvas() {
       // Redo: Ctrl/Cmd + Y or Ctrl/Cmd + Shift + Z
       if (ctrlKey && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
         e.preventDefault()
-        const nextState = useHistoryStore.getState().redo()
+        const currentSlides = useSlidesStore.getState().slides
+        const nextState = useHistoryStore.getState().redo(currentSlides)
         if (nextState) {
           useSlidesStore.getState().setSlides(nextState)
         }
@@ -562,14 +564,16 @@ export function KonvaCanvas() {
   }, [selectedIds, slides, pushState, deleteElements, clearSelection, markDirty])
 
   const undo = useCallback(() => {
-    const previousState = useHistoryStore.getState().undo()
+    const currentSlides = useSlidesStore.getState().slides
+    const previousState = useHistoryStore.getState().undo(currentSlides)
     if (previousState) {
       useSlidesStore.getState().setSlides(previousState)
     }
   }, [])
 
   const redo = useCallback(() => {
-    const nextState = useHistoryStore.getState().redo()
+    const currentSlides = useSlidesStore.getState().slides
+    const nextState = useHistoryStore.getState().redo(currentSlides)
     if (nextState) {
       useSlidesStore.getState().setSlides(nextState)
     }

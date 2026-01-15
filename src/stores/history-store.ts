@@ -11,8 +11,8 @@ interface HistoryState {
 
 interface HistoryActions {
   pushState: (slides: Slide[]) => void
-  undo: () => Slide[] | null
-  redo: () => Slide[] | null
+  undo: (currentSlides: Slide[]) => Slide[] | null
+  redo: (currentSlides: Slide[]) => Slide[] | null
   canUndo: () => boolean
   canRedo: () => boolean
   clear: () => void
@@ -44,7 +44,7 @@ export const useHistoryStore = create<HistoryStore>()(
         }))
       },
 
-      undo: () => {
+      undo: (currentSlides) => {
         const { past } = get()
         if (past.length === 0) return null
 
@@ -53,15 +53,17 @@ export const useHistoryStore = create<HistoryStore>()(
 
         if (!previousState) return null
 
+        // Save current state to future for redo
+        const clonedCurrent = cloneSlides(currentSlides)
         set((state) => ({
           past: newPast,
-          future: state.future, // We'll push current to future in the caller
+          future: [clonedCurrent, ...state.future],
         }))
 
         return previousState
       },
 
-      redo: () => {
+      redo: (currentSlides) => {
         const { future } = get()
         if (future.length === 0) return null
 
@@ -70,7 +72,12 @@ export const useHistoryStore = create<HistoryStore>()(
 
         if (!nextState) return null
 
-        set({ future: newFuture })
+        // Save current state to past for undo
+        const clonedCurrent = cloneSlides(currentSlides)
+        set((state) => ({
+          past: [...state.past, clonedCurrent],
+          future: newFuture,
+        }))
 
         return nextState
       },
