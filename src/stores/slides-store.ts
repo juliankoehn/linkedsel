@@ -880,6 +880,35 @@ export const useSlidesStore = create<SlidesStore>()(
           const currentSlide = newSlides[state.currentSlideIndex]
           if (!currentSlide) return { slides: newSlides }
 
+          // Find the target parent to get its position
+          const targetParent = targetParentId
+            ? findElementRecursive(currentSlide.elements, targetParentId)
+            : null
+
+          // Find current parent to calculate absolute position
+          const findParentOf = (
+            elements: CanvasElement[],
+            childId: string,
+            parentPos = { x: 0, y: 0 }
+          ): { x: number; y: number } | null => {
+            for (const el of elements) {
+              if (el.type === 'group' || el.type === 'frame') {
+                const container = el as GroupElement | FrameElement
+                if (container.children.some((c) => c.id === childId)) {
+                  return { x: parentPos.x + el.x, y: parentPos.y + el.y }
+                }
+                const found = findParentOf(container.children, childId, {
+                  x: parentPos.x + el.x,
+                  y: parentPos.y + el.y,
+                })
+                if (found) return found
+              }
+            }
+            return null
+          }
+
+          const currentParentPos = findParentOf(currentSlide.elements, elementId) || { x: 0, y: 0 }
+
           // Remove element from its current position
           const [elementsAfterRemoval, removedElement] = removeElementRecursive(
             currentSlide.elements,
@@ -887,10 +916,25 @@ export const useSlidesStore = create<SlidesStore>()(
           )
           if (!removedElement) return { slides: newSlides }
 
+          // Calculate element's absolute position
+          const absoluteX = removedElement.x + currentParentPos.x
+          const absoluteY = removedElement.y + currentParentPos.y
+
+          // Convert to position relative to new parent
+          const newX = targetParent ? absoluteX - targetParent.x : absoluteX
+          const newY = targetParent ? absoluteY - targetParent.y : absoluteY
+
+          // Update element position
+          const repositionedElement = {
+            ...removedElement,
+            x: newX,
+            y: newY,
+          }
+
           // Add element to new parent (or root if null)
           currentSlide.elements = addElementToParent(
             elementsAfterRemoval,
-            removedElement,
+            repositionedElement,
             targetParentId
           )
 
