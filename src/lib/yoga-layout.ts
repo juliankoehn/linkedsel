@@ -177,6 +177,29 @@ export function calculateFrameLayout(frame: FrameElement): LayoutResult[] {
 }
 
 /**
+ * Get the visual position of a specific child within a frame
+ * Returns the Yoga-calculated position if auto-layout is enabled
+ */
+export function getChildVisualPosition(
+  frame: FrameElement,
+  childId: string
+): { x: number; y: number } | null {
+  const child = frame.children.find((c) => c.id === childId)
+  if (!child) return null
+
+  // If no auto-layout, use stored position
+  if (frame.layoutMode === 'none') {
+    return { x: child.x, y: child.y }
+  }
+
+  // Calculate layout and find the child's position
+  const layoutResults = calculateFrameLayout(frame)
+  const result = layoutResults.find((r) => r.id === childId)
+
+  return result ? { x: result.x, y: result.y } : { x: child.x, y: child.y }
+}
+
+/**
  * Calculate if frame should auto-resize based on content
  */
 export function calculateFrameAutoSize(

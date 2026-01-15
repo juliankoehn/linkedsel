@@ -2,7 +2,7 @@
 
 import type Konva from 'konva'
 import { useCallback, useEffect, useRef } from 'react'
-import { DISPLAY_SCALE_FACTOR, useCanvasStore } from '@/stores/canvas-store'
+import { DISPLAY_SCALE_FACTOR } from '@/stores/canvas-store'
 import { useSelectionStore } from '@/stores/selection-store'
 import { type TextElement, useSlidesStore } from '@/stores/slides-store'
 
@@ -12,11 +12,12 @@ interface TextOverlayProps {
 
 export function TextOverlay({ stageRef }: TextOverlayProps) {
   const { editingTextId, setEditingTextId } = useSelectionStore()
-  const { getElementById, updateElement } = useSlidesStore()
-  const { zoom } = useCanvasStore()
+  const { getElementById, updateElement, getElementAbsolutePosition } = useSlidesStore()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const element = editingTextId ? (getElementById(editingTextId) as TextElement | undefined) : null
+  // Get absolute position (accounts for parent frames/groups)
+  const absolutePosition = editingTextId ? getElementAbsolutePosition(editingTextId) : null
 
   const handleBlur = useCallback(() => {
     if (editingTextId && textareaRef.current) {
@@ -53,22 +54,24 @@ export function TextOverlay({ stageRef }: TextOverlayProps) {
     }
   }, [editingTextId, autoResize])
 
-  if (!editingTextId || !element || element.type !== 'text') {
+  if (!editingTextId || !element || element.type !== 'text' || !absolutePosition) {
     return null
   }
 
   if (!stageRef.current) return null
 
-  // Calculate scale (same as Stage uses)
-  const scale = DISPLAY_SCALE_FACTOR * zoom
+  // Scale factor - only DISPLAY_SCALE_FACTOR, not zoom
+  // Zoom is already applied by the parent container's CSS transform
+  const scale = DISPLAY_SCALE_FACTOR
 
   // Border width for offset calculation
   const borderWidth = 2
 
   // Position is relative to the canvas wrapper (parent div with position: relative)
-  // Offset by border width so text aligns exactly
-  const x = element.x * scale - borderWidth
-  const y = element.y * scale - borderWidth
+  // Use absolute position to account for parent frames/groups
+  // The parent container already applies zoom via CSS transform
+  const x = absolutePosition.x * scale
+  const y = absolutePosition.y * scale
 
   // Use element's lineHeight or Konva's default (1)
   const lineHeight = element.lineHeight ?? 1
@@ -82,7 +85,7 @@ export function TextOverlay({ stageRef }: TextOverlayProps) {
         position: 'absolute',
         left: x,
         top: y,
-        width: element.width * scale + borderWidth * 2,
+        width: element.width * scale,
         minHeight: element.fontSize * scale * lineHeight,
         fontSize: element.fontSize * scale,
         fontFamily: element.fontFamily,
@@ -94,7 +97,7 @@ export function TextOverlay({ stageRef }: TextOverlayProps) {
         transformOrigin: 'top left',
         border: `${borderWidth}px solid #0066ff`,
         outline: 'none',
-        background: 'rgba(255, 255, 255, 0.9)',
+        background: 'transparent',
         resize: 'none',
         overflow: 'hidden',
         padding: 0,

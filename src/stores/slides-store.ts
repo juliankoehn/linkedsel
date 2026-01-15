@@ -2,6 +2,8 @@ import { nanoid } from 'nanoid'
 import { create } from 'zustand'
 import { devtools, subscribeWithSelector } from 'zustand/middleware'
 
+import { getChildVisualPosition } from '@/lib/yoga-layout'
+
 // Element types
 export type ElementType =
   | 'text'
@@ -250,6 +252,7 @@ interface SlidesActions {
 
   // Helpers
   getElementById: (id: string) => CanvasElement | undefined
+  getElementAbsolutePosition: (id: string) => { x: number; y: number } | null
   getCurrentSlide: () => Slide | undefined
   setSlides: (slides: Slide[]) => void
   getElementsRecursive: (elements: CanvasElement[]) => CanvasElement[]
@@ -1002,7 +1005,61 @@ export const useSlidesStore = create<SlidesStore>()(
       getElementById: (id) => {
         const { slides, currentSlideIndex } = get()
         const currentSlide = slides[currentSlideIndex]
-        return currentSlide?.elements.find((el) => el.id === id)
+        if (!currentSlide) return undefined
+        return findElementRecursive(currentSlide.elements, id)
+      },
+
+      getElementAbsolutePosition: (id) => {
+        const { slides, currentSlideIndex } = get()
+        const currentSlide = slides[currentSlideIndex]
+        if (!currentSlide) return null
+
+        // Recursively find element and calculate absolute visual position
+        // For elements in frames with auto-layout, uses Yoga-calculated positions
+        const findAbsolutePosition = (
+          elements: CanvasElement[],
+          targetId: string,
+          offsetX: number = 0,
+          offsetY: number = 0
+        ): { x: number; y: number } | null => {
+          for (const el of elements) {
+            if (el.id === targetId) {
+              return { x: el.x + offsetX, y: el.y + offsetY }
+            }
+            if (el.type === 'group' || el.type === 'frame') {
+              const container = el as GroupElement | FrameElement
+
+              // For frames, check if child is inside and get visual position
+              if (el.type === 'frame') {
+                const frame = el as FrameElement
+                // Check if target is a direct child
+                const directChild = frame.children.find((c) => c.id === targetId)
+                if (directChild) {
+                  // Get Yoga-calculated position for this child
+                  const visualPos = getChildVisualPosition(frame, targetId)
+                  if (visualPos) {
+                    return {
+                      x: visualPos.x + offsetX + frame.x,
+                      y: visualPos.y + offsetY + frame.y,
+                    }
+                  }
+                }
+              }
+
+              // Recursively search in children
+              const found = findAbsolutePosition(
+                container.children,
+                targetId,
+                offsetX + el.x,
+                offsetY + el.y
+              )
+              if (found) return found
+            }
+          }
+          return null
+        }
+
+        return findAbsolutePosition(currentSlide.elements, id)
       },
 
       getCurrentSlide: () => {
