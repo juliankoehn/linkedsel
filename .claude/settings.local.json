@@ -34,7 +34,8 @@
       "mcp__plugin_playwright_playwright__browser_navigate",
       "Bash(lsof:*)",
       "Bash(pkill:*)",
-      "Bash(pnpm next:*)"
+      "Bash(pnpm next:*)",
+      "mcp__plugin_playwright_playwright__browser_close"
     ]
   }
 }

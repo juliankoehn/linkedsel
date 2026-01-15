@@ -4,9 +4,12 @@ import type Konva from 'konva'
 import { useEffect, useRef } from 'react'
 import { Transformer as KonvaTransformer } from 'react-konva'
 
+import type { CanvasElement } from '@/stores/slides-store'
+
 interface SelectionTransformerProps {
   stageRef: React.RefObject<Konva.Stage | null>
   selectedIds: string[]
+  elements: CanvasElement[]
   onTransformEnd: (
     updates: Array<{
       id: string
@@ -24,26 +27,33 @@ interface SelectionTransformerProps {
 export function SelectionTransformer({
   stageRef,
   selectedIds,
+  elements,
   onTransformEnd,
 }: SelectionTransformerProps) {
   const transformerRef = useRef<Konva.Transformer>(null)
 
-  // Attach transformer to selected nodes
+  // Filter out locked elements
+  const transformableIds = selectedIds.filter((id) => {
+    const element = elements.find((el) => el.id === id)
+    return element && !element.locked
+  })
+
+  // Attach transformer to selected nodes (excluding locked ones)
   useEffect(() => {
     const transformer = transformerRef.current
     const stage = stageRef.current
 
     if (!transformer || !stage) return
 
-    const nodes = selectedIds
+    const nodes = transformableIds
       .map((id) => stage.findOne(`#${id}`))
       .filter((node): node is Konva.Node => node !== undefined)
 
     transformer.nodes(nodes)
     transformer.getLayer()?.batchDraw()
-  }, [selectedIds, stageRef])
+  }, [transformableIds, stageRef])
 
-  if (selectedIds.length === 0) return null
+  if (transformableIds.length === 0) return null
 
   return (
     <KonvaTransformer

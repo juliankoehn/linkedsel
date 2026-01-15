@@ -942,6 +942,7 @@ export function KonvaCanvas() {
                             <SelectionTransformer
                               stageRef={{ current: stageRef ?? null }}
                               selectedIds={selectedIds}
+                              elements={slide.elements}
                               onTransformEnd={handleTransformEnd}
                             />
                           )}
