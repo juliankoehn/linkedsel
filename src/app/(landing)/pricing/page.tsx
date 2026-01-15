@@ -2,6 +2,7 @@ import { Check } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
+import { CheckoutButton } from '@/components/checkout-button'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
 const tiers = [
   {
     name: 'Free',
-    id: 'free',
+    id: 'free' as const,
     price: '0€',
     description: 'Perfekt zum Ausprobieren',
     features: [
@@ -24,12 +25,11 @@ const tiers = [
       'Watermark auf Exports',
     ],
     cta: 'Kostenlos starten',
-    href: '/editor',
     featured: false,
   },
   {
     name: 'Pro',
-    id: 'pro',
+    id: 'pro' as const,
     price: '9€',
     period: '/Monat',
     description: 'Für Content Creator',
@@ -42,12 +42,11 @@ const tiers = [
       'Priority Support',
     ],
     cta: 'Pro werden',
-    href: '/settings?upgrade=pro',
     featured: true,
   },
   {
     name: 'BYOK',
-    id: 'byok',
+    id: 'byok' as const,
     price: '4€',
     period: '/Monat',
     description: 'Bring Your Own Key',
@@ -60,7 +59,6 @@ const tiers = [
       'Niedrigere Kosten',
     ],
     cta: 'Mit eigenem Key starten',
-    href: '/settings?upgrade=byok',
     featured: false,
   },
 ]
@@ -114,13 +112,19 @@ export default function PricingPage() {
               </ul>
 
               <div className="mt-8">
-                <Button
-                  asChild
-                  className="w-full"
-                  variant={tier.featured ? 'default' : 'outline'}
-                >
-                  <Link href={tier.href}>{tier.cta}</Link>
-                </Button>
+                {tier.id === 'free' ? (
+                  <Button asChild className="w-full" variant="outline">
+                    <Link href="/editor">{tier.cta}</Link>
+                  </Button>
+                ) : (
+                  <CheckoutButton
+                    plan={tier.id}
+                    variant={tier.featured ? 'default' : 'outline'}
+                    className="w-full"
+                  >
+                    {tier.cta}
+                  </CheckoutButton>
+                )}
               </div>
             </div>
           ))}

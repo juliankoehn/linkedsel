@@ -1,0 +1,17 @@
+<svg width="270" height="338" viewBox="0 0 270 338" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="270" height="338" fill="#f0fdf4"/>
+  <circle cx="40" cy="80" r="20" fill="#22c55e"/>
+  <text x="40" y="86" font-family="Inter, sans-serif" font-size="16" font-weight="bold" fill="#ffffff" text-anchor="middle">1</text>
+  <text x="75" y="75" font-family="Inter, sans-serif" font-size="14" font-weight="600" fill="#166534">Schritt eins</text>
+  <text x="75" y="92" font-family="Inter, sans-serif" font-size="10" fill="#4ade80">Grundlagen lernen</text>
+  <rect x="40" y="105" width="1" height="40" fill="#bbf7d0"/>
+  <circle cx="40" cy="165" r="20" fill="#86efac"/>
+  <text x="40" y="171" font-family="Inter, sans-serif" font-size="16" font-weight="bold" fill="#166534" text-anchor="middle">2</text>
+  <text x="75" y="160" font-family="Inter, sans-serif" font-size="14" font-weight="600" fill="#166534">Schritt zwei</text>
+  <text x="75" y="177" font-family="Inter, sans-serif" font-size="10" fill="#4ade80">Anwenden</text>
+  <rect x="40" y="190" width="1" height="40" fill="#bbf7d0"/>
+  <circle cx="40" cy="250" r="20" fill="#dcfce7"/>
+  <text x="40" y="256" font-family="Inter, sans-serif" font-size="16" font-weight="bold" fill="#166534" text-anchor="middle">3</text>
+  <text x="75" y="245" font-family="Inter, sans-serif" font-size="14" font-weight="600" fill="#166534">Schritt drei</text>
+  <text x="75" y="262" font-family="Inter, sans-serif" font-size="10" fill="#4ade80">Meistern</text>
+</svg>

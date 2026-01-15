@@ -4,6 +4,7 @@ import { useState } from 'react'
 
 import { TemplateCard } from '@/components/templates/template-card'
 import { Button } from '@/components/ui/button'
+import { useSubscription } from '@/hooks/use-subscription'
 import { DEFAULT_TEMPLATES } from '@/lib/templates/default-templates'
 import { TEMPLATE_CATEGORIES, type TemplateCategory } from '@/types/templates'
 
@@ -13,9 +14,7 @@ export default function TemplatesPage() {
   const [selectedCategory, setSelectedCategory] =
     useState<FilterCategory>('all')
   const [showPremiumOnly, setShowPremiumOnly] = useState(false)
-
-  // TODO: Get from auth/subscription context
-  const hasSubscription = false
+  const { hasSubscription } = useSubscription()
 
   const filteredTemplates = DEFAULT_TEMPLATES.filter((template) => {
     const categoryMatch =

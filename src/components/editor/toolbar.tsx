@@ -15,6 +15,7 @@ import {
   Plus,
   Redo,
   Save,
+  Sparkles,
   Square,
   Trash2,
   Type,
@@ -23,6 +24,8 @@ import {
 import { useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { useExport } from '@/hooks/use-export'
+import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import {
   FORMAT_PRESETS,
@@ -30,10 +33,16 @@ import {
   useEditorStore,
 } from '@/stores/editor'
 
-export function EditorToolbar() {
+interface EditorToolbarProps {
+  onOpenAIPanel?: () => void
+}
+
+export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const nameInputRef = useRef<HTMLInputElement>(null)
   const [isEditingName, setIsEditingName] = useState(false)
+  const { toast } = useToast()
+  const { exportPDF } = useExport()
   const {
     addText,
     addShape,
@@ -41,7 +50,6 @@ export function EditorToolbar() {
     undo,
     redo,
     deleteSelected,
-    exportPDF,
     selectedObject,
     updateSelectedObject,
     setBackgroundColor,
@@ -69,7 +77,19 @@ export function EditorToolbar() {
   }
 
   const handleSave = async () => {
-    await saveProject()
+    const result = await saveProject()
+    if ('error' in result) {
+      toast({
+        title: 'Fehler beim Speichern',
+        description: result.error,
+        variant: 'destructive',
+      })
+    } else {
+      toast({
+        title: 'Gespeichert',
+        description: 'Dein Projekt wurde erfolgreich gespeichert.',
+      })
+    }
   }
 
   const handleNameEdit = () => {
@@ -200,7 +220,19 @@ export function EditorToolbar() {
             Speichern
           </Button>
 
-          <Button onClick={() => exportPDF()}>
+          {onOpenAIPanel && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onOpenAIPanel}
+              className="border-purple-200 text-purple-600 hover:bg-purple-50"
+            >
+              <Sparkles className="mr-2 h-4 w-4" />
+              AI Content
+            </Button>
+          )}
+
+          <Button onClick={exportPDF}>
             <Download className="mr-2 h-4 w-4" />
             Export PDF
           </Button>

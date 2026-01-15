@@ -121,10 +121,17 @@ interface EditorState {
   setFormat: (format: FormatPreset) => void
 
   // Project persistence
-  saveProject: () => Promise<string | null>
-  loadProject: (projectId: string) => Promise<boolean>
+  saveProject: () => Promise<{ id: string } | { error: string }>
+  loadProject: (
+    projectId: string
+  ) => Promise<{ success: true } | { error: string }>
   serializeProject: () => ProjectData
   deserializeProject: (data: ProjectData) => void
+
+  // AI Content
+  applyAIContent: (
+    slides: Array<{ headline: string; body: string; callToAction?: string }>
+  ) => void
 
   reset: () => void
 }
@@ -899,14 +906,18 @@ export const useEditorStore = create<EditorState>()(
         }
       },
 
-      saveProject: async (): Promise<string | null> => {
-        const { projectId, projectName, isSaving } = get()
-        if (isSaving) return projectId
+      saveProject: async (): Promise<{ id: string } | { error: string }> => {
+        const { projectId, projectName, isSaving, canvas, format } = get()
+        if (isSaving)
+          return projectId
+            ? { id: projectId }
+            : { error: 'Bereits beim Speichern' }
 
         set({ isSaving: true })
 
         try {
           const data = get().serializeProject()
+          let savedProjectId = projectId
 
           if (projectId) {
             // Update existing project
@@ -916,10 +927,13 @@ export const useEditorStore = create<EditorState>()(
               body: JSON.stringify({ name: projectName, data }),
             })
 
-            if (!response.ok) throw new Error('Failed to save project')
-
-            set({ isDirty: false, isSaving: false })
-            return projectId
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({}))
+              const errorMsg =
+                errorData.error || `Server Fehler (${response.status})`
+              set({ isSaving: false })
+              return { error: errorMsg }
+            }
           } else {
             // Create new project
             const response = await fetch('/api/projects', {
@@ -928,25 +942,115 @@ export const useEditorStore = create<EditorState>()(
               body: JSON.stringify({ name: projectName, data }),
             })
 
-            if (!response.ok) throw new Error('Failed to create project')
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({}))
+              const errorMsg =
+                errorData.error || `Server Fehler (${response.status})`
+              set({ isSaving: false })
+              return { error: errorMsg }
+            }
 
             const result = await response.json()
-            const newId = result.project.id
-
-            set({ projectId: newId, isDirty: false, isSaving: false })
-            return newId
+            savedProjectId = result.project.id
+            set({ projectId: savedProjectId })
           }
+
+          // Generate and upload thumbnail
+          if (canvas && savedProjectId) {
+            try {
+              const { width, height } = getCanvasDimensions(format)
+              const { currentSlideIndex } = get()
+              const currentSlides = get().slides
+
+              // If we're on slide 0, use the current canvas directly
+              // Otherwise use the stored first slide
+              const isOnFirstSlide = currentSlideIndex === 0
+              const firstSlide = currentSlides[0]
+
+              // Create a temporary canvas for thumbnail at full size
+              const tempCanvas = document.createElement('canvas')
+              const staticCanvas = new fabric.StaticCanvas(tempCanvas, {
+                width: width,
+                height: height,
+                backgroundColor: isOnFirstSlide
+                  ? (canvas.backgroundColor as string)
+                  : firstSlide?.backgroundColor || '#ffffff',
+              })
+
+              // Get objects - from current canvas if on first slide, otherwise from stored slide
+              const objectsToRender = isOnFirstSlide
+                ? canvas.getObjects()
+                : firstSlide?.objects || []
+
+              // Clone and add objects
+              for (const obj of objectsToRender) {
+                const clonedObj = await obj.clone()
+                staticCanvas.add(clonedObj)
+              }
+
+              staticCanvas.renderAll()
+
+              // Generate thumbnail - use multiplier to get actual pixel size
+              // multiplier is relative to the staticCanvas size
+              const thumbnailDataUrl = staticCanvas.toDataURL({
+                format: 'png',
+                multiplier: 0.25,
+              })
+
+              // Convert data URL to blob
+              const blobResponse = await fetch(thumbnailDataUrl)
+              const blob = await blobResponse.blob()
+
+              console.log('Uploading thumbnail:', blob.size, 'bytes')
+
+              // Upload thumbnail
+              const formData = new FormData()
+              formData.append('file', blob, 'thumbnail.png')
+              formData.append('projectId', savedProjectId)
+
+              const uploadResponse = await fetch('/api/thumbnails', {
+                method: 'POST',
+                body: formData,
+              })
+
+              if (!uploadResponse.ok) {
+                const err = await uploadResponse.json().catch(() => ({}))
+                console.error('Thumbnail upload failed:', err)
+              } else {
+                console.log('Thumbnail uploaded successfully')
+              }
+
+              // Cleanup
+              staticCanvas.dispose()
+            } catch (thumbnailError) {
+              console.error('Thumbnail generation failed:', thumbnailError)
+            }
+          }
+
+          set({ isDirty: false, isSaving: false })
+          return { id: savedProjectId! }
         } catch (error) {
           console.error('Failed to save project:', error)
           set({ isSaving: false })
-          return null
+          return {
+            error:
+              error instanceof Error ? error.message : 'Unbekannter Fehler',
+          }
         }
       },
 
-      loadProject: async (projectId: string): Promise<boolean> => {
+      loadProject: async (
+        projectId: string
+      ): Promise<{ success: true } | { error: string }> => {
         try {
           const response = await fetch(`/api/projects/${projectId}`)
-          if (!response.ok) throw new Error('Failed to load project')
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}))
+            const errorMsg =
+              errorData.error || `Server Fehler (${response.status})`
+            return { error: errorMsg }
+          }
 
           const result = await response.json()
           const project = result.project
@@ -960,10 +1064,94 @@ export const useEditorStore = create<EditorState>()(
             await get().deserializeProject(project.data as ProjectData)
           }
 
-          return true
+          return { success: true }
         } catch (error) {
           console.error('Failed to load project:', error)
-          return false
+          return {
+            error:
+              error instanceof Error ? error.message : 'Unbekannter Fehler',
+          }
+        }
+      },
+
+      applyAIContent: (aiSlides) => {
+        const { canvas, format } = get()
+        const { width, height } = getCanvasDimensions(format)
+
+        get().saveHistory()
+
+        // Create slides from AI content
+        const newSlides: Slide[] = aiSlides.map((aiSlide, index) => {
+          const objects: fabric.FabricObject[] = []
+
+          // Headline - large text at top
+          const headline = new fabric.IText(aiSlide.headline, {
+            left: 60,
+            top: index === 0 ? 120 : 80,
+            fontSize: index === 0 ? 64 : 56,
+            fontFamily: 'Inter',
+            fontWeight: 'bold',
+            fill: '#1a1a1a',
+            width: width - 120,
+          })
+          objects.push(headline)
+
+          // Body - medium text below headline
+          const body = new fabric.IText(aiSlide.body, {
+            left: 60,
+            top: index === 0 ? 250 : 200,
+            fontSize: 32,
+            fontFamily: 'Inter',
+            fontWeight: 'normal',
+            fill: '#4a4a4a',
+            width: width - 120,
+          })
+          objects.push(body)
+
+          // Call to Action - if present and last slide
+          if (aiSlide.callToAction && index === aiSlides.length - 1) {
+            const cta = new fabric.IText(aiSlide.callToAction, {
+              left: 60,
+              top: height - 200,
+              fontSize: 36,
+              fontFamily: 'Inter',
+              fontWeight: 'bold',
+              fill: '#7c3aed', // Purple color
+            })
+            objects.push(cta)
+          }
+
+          // Slide number indicator
+          const slideNum = new fabric.IText(`${index + 1}/${aiSlides.length}`, {
+            left: width - 100,
+            top: height - 80,
+            fontSize: 24,
+            fontFamily: 'Inter',
+            fontWeight: 'normal',
+            fill: '#9ca3af',
+          })
+          objects.push(slideNum)
+
+          return {
+            id: generateId(),
+            backgroundColor: '#ffffff',
+            objects,
+          }
+        })
+
+        set({
+          slides: newSlides,
+          currentSlideIndex: 0,
+          isDirty: true,
+        })
+
+        // Load first slide into canvas
+        const firstSlide = newSlides[0]
+        if (canvas && firstSlide) {
+          canvas.clear()
+          canvas.backgroundColor = firstSlide.backgroundColor
+          firstSlide.objects.forEach((obj) => canvas.add(obj))
+          canvas.renderAll()
         }
       },
 

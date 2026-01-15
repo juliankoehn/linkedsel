@@ -11,7 +11,7 @@ export const DEFAULT_TEMPLATES: CarouselTemplate[] = [
     description: 'Minimalistisches Design für Tipps & Listen',
     category: 'minimal',
     isPremium: false,
-    thumbnailUrl: '/templates/minimal-tips.png',
+    thumbnailUrl: '/templates/minimal-tips.svg',
     colors: ['#000000', '#ffffff', '#f3f4f6'],
     slides: [
       {
@@ -179,7 +179,7 @@ export const DEFAULT_TEMPLATES: CarouselTemplate[] = [
     description: 'Kraftvolle Aussagen mit starkem Kontrast',
     category: 'bold',
     isPremium: false,
-    thumbnailUrl: '/templates/bold-statement.png',
+    thumbnailUrl: '/templates/bold-statement.svg',
     colors: ['#1e40af', '#ffffff', '#fbbf24'],
     slides: [
       {
@@ -304,7 +304,7 @@ export const DEFAULT_TEMPLATES: CarouselTemplate[] = [
     description: 'Professionelles Design für B2B Content',
     category: 'business',
     isPremium: true,
-    thumbnailUrl: '/templates/business-pro.png',
+    thumbnailUrl: '/templates/business-pro.svg',
     colors: ['#0f172a', '#ffffff', '#0ea5e9'],
     slides: [
       {
@@ -422,7 +422,7 @@ export const DEFAULT_TEMPLATES: CarouselTemplate[] = [
     description: 'Moderne Farbverläufe für aufmerksamkeitsstarke Posts',
     category: 'marketing',
     isPremium: true,
-    thumbnailUrl: '/templates/gradient-modern.png',
+    thumbnailUrl: '/templates/gradient-modern.svg',
     colors: ['#7c3aed', '#ec4899', '#ffffff'],
     slides: [
       {
@@ -485,7 +485,7 @@ export const DEFAULT_TEMPLATES: CarouselTemplate[] = [
     description: 'Ideal für Tutorials und Anleitungen',
     category: 'education',
     isPremium: false,
-    thumbnailUrl: '/templates/education-steps.png',
+    thumbnailUrl: '/templates/education-steps.svg',
     colors: ['#059669', '#ffffff', '#d1fae5'],
     slides: [
       {
@@ -592,7 +592,7 @@ export const DEFAULT_TEMPLATES: CarouselTemplate[] = [
     description: 'Authentisches Design für Personal Branding',
     category: 'personal',
     isPremium: false,
-    thumbnailUrl: '/templates/personal-brand.png',
+    thumbnailUrl: '/templates/personal-brand.svg',
     colors: ['#f59e0b', '#1f2937', '#ffffff'],
     slides: [
       {

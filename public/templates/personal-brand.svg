@@ -1,0 +1,11 @@
+<svg width="270" height="338" viewBox="0 0 270 338" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="270" height="338" fill="#fef3c7"/>
+  <circle cx="135" cy="100" r="45" fill="#fbbf24"/>
+  <circle cx="135" cy="100" r="35" fill="#fef3c7"/>
+  <text x="135" y="108" font-family="Inter, sans-serif" font-size="24" font-weight="bold" fill="#92400e" text-anchor="middle">JD</text>
+  <text x="135" y="180" font-family="Inter, sans-serif" font-size="18" font-weight="bold" fill="#78350f" text-anchor="middle">Jane Doe</text>
+  <text x="135" y="205" font-family="Inter, sans-serif" font-size="11" fill="#a16207" text-anchor="middle">Marketing Expert</text>
+  <rect x="85" y="230" width="100" height="1" fill="#fcd34d"/>
+  <text x="135" y="270" font-family="Inter, sans-serif" font-size="10" fill="#92400e" text-anchor="middle">Folge mir fur mehr Tipps</text>
+  <text x="135" y="290" font-family="Inter, sans-serif" font-size="10" fill="#92400e" text-anchor="middle">@janedoe</text>
+</svg>

@@ -52,6 +52,7 @@ async function updateSubscription(
     plan?: string
     status?: string
     lemon_subscription_id?: string
+    lemon_customer_id?: string
     current_period_end?: string | null
   }
 ) {
@@ -110,6 +111,7 @@ export async function POST(request: NextRequest) {
       case 'subscription_created': {
         const plan = getPlanFromVariant(String(attributes.variant_id))
         const status = normalizeSubscriptionStatus(attributes.status)
+        const customerId = String(attributes.customer_id)
 
         // Check if subscription already exists
         const { data: existing } = await supabase
@@ -127,6 +129,7 @@ export async function POST(request: NextRequest) {
               plan,
               status,
               lemon_subscription_id: subscriptionId,
+              lemon_customer_id: customerId,
               current_period_end: attributes.renews_at,
             }
           )
@@ -145,8 +148,9 @@ export async function POST(request: NextRequest) {
             plan,
             status,
             lemon_subscription_id: subscriptionId,
+            lemon_customer_id: customerId,
             current_period_end: attributes.renews_at,
-          })
+          } as never)
 
           if (error) {
             console.error('Failed to create subscription', error)

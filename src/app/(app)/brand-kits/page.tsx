@@ -1,9 +1,11 @@
 'use client'
 
-import { Plus, Palette, Trash2, Edit2 } from 'lucide-react'
-import { useState } from 'react'
+import { Edit2, Loader2, Palette, Plus, Trash2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { useSubscription } from '@/hooks/use-subscription'
+import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import {
   DEFAULT_COLORS,
@@ -12,30 +14,42 @@ import {
   type BrandColor,
 } from '@/types/brand-kit'
 
-// Mock data - will be replaced with Supabase
-const MOCK_BRAND_KITS: BrandKit[] = [
-  {
-    id: '1',
-    name: 'Mein Brand',
-    colors: DEFAULT_COLORS,
-    fonts: DEFAULT_FONTS,
-    logoUrl: null,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-]
-
 export default function BrandKitsPage() {
-  const [brandKits, setBrandKits] = useState<BrandKit[]>(MOCK_BRAND_KITS)
-  const [selectedKit, setSelectedKit] = useState<BrandKit | null>(
-    MOCK_BRAND_KITS[0] || null
-  )
+  const [brandKits, setBrandKits] = useState<BrandKit[]>([])
+  const [selectedKit, setSelectedKit] = useState<BrandKit | null>(null)
   const [isEditing, setIsEditing] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const { hasSubscription } = useSubscription()
+  const { toast } = useToast()
 
-  // TODO: Get from subscription context
-  const hasSubscription = false
+  // Fetch brand kits from API
+  useEffect(() => {
+    const fetchBrandKits = async () => {
+      try {
+        const response = await fetch('/api/brand-kits')
+        if (response.ok) {
+          const data = await response.json()
+          setBrandKits(data.brandKits || [])
+          if (data.brandKits?.length > 0) {
+            setSelectedKit(data.brandKits[0])
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch brand kits:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
 
-  const handleCreateKit = () => {
+    if (hasSubscription) {
+      fetchBrandKits()
+    } else {
+      setIsLoading(false)
+    }
+  }, [hasSubscription])
+
+  const handleCreateKit = async () => {
     const newKit: BrandKit = {
       id: crypto.randomUUID(),
       name: 'Neues Brand Kit',
@@ -45,15 +59,62 @@ export default function BrandKitsPage() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }
-    setBrandKits([...brandKits, newKit])
-    setSelectedKit(newKit)
-    setIsEditing(true)
+
+    try {
+      const response = await fetch('/api/brand-kits', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newKit.name,
+          colors: newKit.colors,
+          fonts: newKit.fonts,
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const createdKit = {
+          ...newKit,
+          id: data.brandKit.id,
+        }
+        setBrandKits([...brandKits, createdKit])
+        setSelectedKit(createdKit)
+        setIsEditing(true)
+        toast({ title: 'Brand Kit erstellt' })
+      } else {
+        toast({
+          title: 'Fehler',
+          description: 'Brand Kit konnte nicht erstellt werden',
+          variant: 'destructive',
+        })
+      }
+    } catch (error) {
+      console.error('Failed to create brand kit:', error)
+      toast({
+        title: 'Fehler',
+        description: 'Verbindungsfehler',
+        variant: 'destructive',
+      })
+    }
   }
 
-  const handleDeleteKit = (id: string) => {
-    setBrandKits(brandKits.filter((kit) => kit.id !== id))
-    if (selectedKit?.id === id) {
-      setSelectedKit(brandKits[0] || null)
+  const handleDeleteKit = async (id: string) => {
+    if (!confirm('Brand Kit wirklich löschen?')) return
+
+    try {
+      const response = await fetch(`/api/brand-kits/${id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        setBrandKits(brandKits.filter((kit) => kit.id !== id))
+        if (selectedKit?.id === id) {
+          setSelectedKit(brandKits[0] || null)
+        }
+        toast({ title: 'Brand Kit gelöscht' })
+      }
+    } catch (error) {
+      console.error('Failed to delete brand kit:', error)
     }
   }
 
@@ -67,6 +128,35 @@ export default function BrandKitsPage() {
     setBrandKits(
       brandKits.map((k) => (k.id === selectedKit.id ? updatedKit : k))
     )
+  }
+
+  const handleSave = async () => {
+    if (!selectedKit) return
+
+    setIsSaving(true)
+    try {
+      const response = await fetch(`/api/brand-kits/${selectedKit.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: selectedKit.name,
+          colors: selectedKit.colors,
+          fonts: selectedKit.fonts,
+        }),
+      })
+
+      if (response.ok) {
+        toast({ title: 'Gespeichert' })
+        setIsEditing(false)
+      } else {
+        toast({ title: 'Fehler beim Speichern', variant: 'destructive' })
+      }
+    } catch (error) {
+      console.error('Failed to save brand kit:', error)
+      toast({ title: 'Verbindungsfehler', variant: 'destructive' })
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   if (!hasSubscription) {
@@ -98,6 +188,14 @@ export default function BrandKitsPage() {
     )
   }
 
+  if (isLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -119,56 +217,64 @@ export default function BrandKitsPage() {
           <h2 className="text-sm font-medium text-gray-900">
             Deine Brand Kits
           </h2>
-          <div className="space-y-2">
-            {brandKits.map((kit) => (
-              <div
-                key={kit.id}
-                onClick={() => setSelectedKit(kit)}
-                className={cn(
-                  'flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors',
-                  selectedKit?.id === kit.id
-                    ? 'border-brand-500 bg-brand-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex -space-x-1">
-                    {kit.colors.slice(0, 3).map((color) => (
-                      <div
-                        key={color.id}
-                        className="h-6 w-6 rounded-full border-2 border-white"
-                        style={{ backgroundColor: color.hex }}
-                      />
-                    ))}
+          {brandKits.length === 0 ? (
+            <p className="text-sm text-gray-500">
+              Noch keine Brand Kits erstellt.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {brandKits.map((kit) => (
+                <div
+                  key={kit.id}
+                  onClick={() => setSelectedKit(kit)}
+                  className={cn(
+                    'flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors',
+                    selectedKit?.id === kit.id
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex -space-x-1">
+                      {kit.colors.slice(0, 3).map((color) => (
+                        <div
+                          key={color.id}
+                          className="h-6 w-6 rounded-full border-2 border-white"
+                          style={{ backgroundColor: color.hex }}
+                        />
+                      ))}
+                    </div>
+                    <span className="font-medium text-gray-900">
+                      {kit.name}
+                    </span>
                   </div>
-                  <span className="font-medium text-gray-900">{kit.name}</span>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelectedKit(kit)
+                        setIsEditing(true)
+                      }}
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeleteKit(kit.id)
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setSelectedKit(kit)
-                      setIsEditing(true)
-                    }}
-                  >
-                    <Edit2 className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleDeleteKit(kit.id)
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Brand Kit Editor */}
@@ -193,8 +299,18 @@ export default function BrandKitsPage() {
                 />
                 <Button
                   variant={isEditing ? 'default' : 'outline'}
-                  onClick={() => setIsEditing(!isEditing)}
+                  onClick={() => {
+                    if (isEditing) {
+                      handleSave()
+                    } else {
+                      setIsEditing(true)
+                    }
+                  }}
+                  disabled={isSaving}
                 >
+                  {isSaving ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
                   {isEditing ? 'Speichern' : 'Bearbeiten'}
                 </Button>
               </div>

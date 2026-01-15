@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 
 import { AppHeader } from '@/components/app/header'
 import { AppSidebar } from '@/components/app/sidebar'
+import { Toaster } from '@/components/ui/toaster'
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
@@ -13,6 +14,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <AppHeader />
         <main className="flex-1 overflow-auto p-6">{children}</main>
       </div>
+      <Toaster />
     </div>
   )
 }

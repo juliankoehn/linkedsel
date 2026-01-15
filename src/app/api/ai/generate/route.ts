@@ -6,6 +6,7 @@ import {
   type AIProvider,
   type ContentGenerationRequest,
 } from '@/lib/ai'
+import { decryptApiKey } from '@/lib/encryption'
 import { createClient } from '@/lib/supabase/server'
 import type { ApiKey, Subscription } from '@/types/database'
 
@@ -66,11 +67,11 @@ export async function POST(request: NextRequest) {
       const apiKeyRecord = apiKeyData as ApiKeyEncrypted | null
 
       if (apiKeyRecord?.encrypted_key) {
-        // TODO: Decrypt the key properly (for now using it directly)
-        // In production, use proper encryption/decryption
+        // Decrypt the API key (handles both legacy base64 and new AES-256-GCM)
+        const decryptedKey = decryptApiKey(apiKeyRecord.encrypted_key)
         aiService = createAIService({
           provider: preferredProvider,
-          apiKey: apiKeyRecord.encrypted_key,
+          apiKey: decryptedKey,
         })
       }
     }

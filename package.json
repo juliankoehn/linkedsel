@@ -23,6 +23,7 @@
     "supabase:types": "supabase gen types typescript --local > src/types/database.ts",
     "db:seed": "tsx scripts/seed.ts",
     "db:reset": "supabase db reset",
+    "db:check": "./scripts/check-db.sh",
     "prepare": "husky"
   },
   "dependencies": {

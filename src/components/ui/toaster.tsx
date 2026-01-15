@@ -9,6 +9,7 @@ import {
   type ElementRef,
 } from 'react'
 
+import { useToastStore } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 
 const ToastProvider = ToastPrimitive.Provider
@@ -117,8 +118,25 @@ const ToastDescription = forwardRef<
 ToastDescription.displayName = ToastPrimitive.Description.displayName
 
 export function Toaster() {
+  const { toasts, removeToast } = useToastStore()
+
   return (
     <ToastProvider>
+      {toasts.map((t) => (
+        <Toast
+          key={t.id}
+          variant={t.variant}
+          onOpenChange={() => removeToast(t.id)}
+        >
+          <div className="grid gap-1">
+            <ToastTitle>{t.title}</ToastTitle>
+            {t.description && (
+              <ToastDescription>{t.description}</ToastDescription>
+            )}
+          </div>
+          <ToastClose />
+        </Toast>
+      ))}
       <ToastViewport />
     </ToastProvider>
   )

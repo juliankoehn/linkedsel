@@ -1,42 +1,63 @@
 'use client'
 
 import {
-  User,
-  CreditCard,
-  Key,
-  LogOut,
   Check,
+  CheckCircle,
+  CreditCard,
   ExternalLink,
+  Key,
+  Loader2,
+  LogOut,
+  User,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
 
+import { CheckoutButton } from '@/components/checkout-button'
 import { Button } from '@/components/ui/button'
+import { useSubscription } from '@/hooks/use-subscription'
+import { useToast } from '@/hooks/use-toast'
+import { useUser } from '@/hooks/use-user'
 import { cn } from '@/lib/utils'
 
 type SettingsTab = 'account' | 'subscription' | 'api-keys'
 
-export default function SettingsPage() {
+function SettingsContent() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('account')
+  const { user, isLoading: userLoading, signOut } = useUser()
+  const { subscription, isLoading: subLoading, refetch } = useSubscription()
+  const searchParams = useSearchParams()
+  const [showSuccess, setShowSuccess] = useState(false)
 
-  // TODO: Get from auth context
-  const user = {
-    name: 'Demo User',
-    email: 'demo@example.com',
-    avatarUrl: null,
-  }
-
-  // TODO: Get from subscription context
-  const subscription = {
-    plan: 'free' as 'free' | 'pro' | 'byok',
-    status: 'active',
-    currentPeriodEnd: null as string | null,
-  }
+  // Handle checkout success
+  useEffect(() => {
+    if (searchParams.get('checkout') === 'success') {
+      setShowSuccess(true)
+      setActiveTab('subscription')
+      // Refetch subscription after successful checkout
+      const timer = setTimeout(() => {
+        refetch()
+      }, 2000)
+      // Clear URL params
+      window.history.replaceState({}, '', '/settings')
+      return () => clearTimeout(timer)
+    }
+    return undefined
+  }, [searchParams, refetch])
 
   const tabs = [
     { id: 'account' as const, label: 'Account', icon: User },
     { id: 'subscription' as const, label: 'Abo', icon: CreditCard },
     { id: 'api-keys' as const, label: 'API Keys', icon: Key },
   ]
+
+  if (userLoading || subLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8">
@@ -46,6 +67,19 @@ export default function SettingsPage() {
           Verwalte dein Konto und deine Einstellungen
         </p>
       </div>
+
+      {/* Success message */}
+      {showSuccess && (
+        <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-4">
+          <CheckCircle className="h-5 w-5 text-green-600" />
+          <div>
+            <p className="font-medium text-green-900">Zahlung erfolgreich!</p>
+            <p className="text-sm text-green-700">
+              Dein Account wird in wenigen Sekunden aktualisiert.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-8">
         {/* Sidebar */}
@@ -57,7 +91,7 @@ export default function SettingsPage() {
               className={cn(
                 'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                 activeTab === tab.id
-                  ? 'bg-brand-50 text-brand-700'
+                  ? 'bg-blue-50 text-blue-700'
                   : 'text-gray-600 hover:bg-gray-100'
               )}
             >
@@ -69,7 +103,20 @@ export default function SettingsPage() {
 
         {/* Content */}
         <div className="flex-1">
-          {activeTab === 'account' && <AccountSettings user={user} />}
+          {activeTab === 'account' && (
+            <AccountSettings
+              user={
+                user
+                  ? {
+                      name: user.name || 'User',
+                      email: user.email,
+                      avatarUrl: user.avatarUrl,
+                    }
+                  : null
+              }
+              onSignOut={signOut}
+            />
+          )}
           {activeTab === 'subscription' && (
             <SubscriptionSettings subscription={subscription} />
           )}
@@ -82,15 +129,45 @@ export default function SettingsPage() {
   )
 }
 
+export default function SettingsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-64 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        </div>
+      }
+    >
+      <SettingsContent />
+    </Suspense>
+  )
+}
+
 interface AccountSettingsProps {
   user: {
     name: string
     email: string
     avatarUrl: string | null
-  }
+  } | null
+  onSignOut: () => Promise<void>
 }
 
-function AccountSettings({ user }: AccountSettingsProps) {
+function AccountSettings({ user, onSignOut }: AccountSettingsProps) {
+  const [isSigningOut, setIsSigningOut] = useState(false)
+
+  const handleSignOut = async () => {
+    setIsSigningOut(true)
+    await onSignOut()
+  }
+
+  if (!user) {
+    return (
+      <div className="rounded-lg border bg-white p-6">
+        <p className="text-gray-500">Nicht angemeldet</p>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div className="rounded-lg border bg-white p-6">
@@ -101,7 +178,7 @@ function AccountSettings({ user }: AccountSettingsProps) {
 
         <div className="mt-6 space-y-4">
           <div className="flex items-center gap-4">
-            <div className="bg-brand-100 text-brand-600 flex h-16 w-16 items-center justify-center rounded-full text-2xl font-bold">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 text-2xl font-bold text-blue-600">
               {user.name.charAt(0).toUpperCase()}
             </div>
             <div>
@@ -117,8 +194,17 @@ function AccountSettings({ user }: AccountSettingsProps) {
         <p className="mt-1 text-sm text-gray-500">Irreversible Aktionen</p>
 
         <div className="mt-6">
-          <Button variant="outline" className="text-red-600 hover:bg-red-50">
-            <LogOut className="mr-2 h-4 w-4" />
+          <Button
+            variant="outline"
+            className="text-red-600 hover:bg-red-50"
+            onClick={handleSignOut}
+            disabled={isSigningOut}
+          >
+            {isSigningOut ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <LogOut className="mr-2 h-4 w-4" />
+            )}
             Abmelden
           </Button>
         </div>
@@ -136,6 +222,9 @@ interface SubscriptionSettingsProps {
 }
 
 function SubscriptionSettings({ subscription }: SubscriptionSettingsProps) {
+  const [isLoadingPortal, setIsLoadingPortal] = useState(false)
+  const { toast } = useToast()
+
   const plans = [
     {
       id: 'free' as const,
@@ -170,18 +259,44 @@ function SubscriptionSettings({ subscription }: SubscriptionSettingsProps) {
 
   const currentPlan = plans.find((p) => p.id === subscription.plan)
 
+  const handleOpenPortal = async () => {
+    setIsLoadingPortal(true)
+    try {
+      const response = await fetch('/api/customer-portal', {
+        method: 'POST',
+      })
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Portal konnte nicht geöffnet werden')
+      }
+
+      window.open(data.url, '_blank')
+    } catch (error) {
+      console.error('Portal error:', error)
+      toast({
+        title: 'Fehler',
+        description:
+          error instanceof Error ? error.message : 'Verbindungsfehler',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsLoadingPortal(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="rounded-lg border bg-white p-6">
         <h2 className="text-lg font-semibold text-gray-900">Aktueller Plan</h2>
         <p className="mt-1 text-sm text-gray-500">Dein aktueller Abo-Status</p>
 
-        <div className="border-brand-500 bg-brand-50 mt-6 flex items-center justify-between rounded-lg border-2 p-4">
+        <div className="mt-6 flex items-center justify-between rounded-lg border-2 border-blue-500 bg-blue-50 p-4">
           <div>
-            <p className="text-brand-700 text-lg font-bold">
+            <p className="text-lg font-bold text-blue-700">
               {currentPlan?.name || 'Free'}
             </p>
-            <p className="text-brand-600 text-sm">{currentPlan?.price}</p>
+            <p className="text-sm text-blue-600">{currentPlan?.price}</p>
           </div>
           <span className="rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-700">
             Aktiv
@@ -213,7 +328,7 @@ function SubscriptionSettings({ subscription }: SubscriptionSettingsProps) {
               className={cn(
                 'rounded-lg border p-4',
                 subscription.plan === plan.id
-                  ? 'border-brand-500 bg-brand-50'
+                  ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200'
               )}
             >
@@ -235,13 +350,18 @@ function SubscriptionSettings({ subscription }: SubscriptionSettingsProps) {
                 <Button variant="outline" disabled className="w-full">
                   Aktueller Plan
                 </Button>
+              ) : plan.id === 'free' ? (
+                <Button variant="outline" disabled className="w-full">
+                  Free
+                </Button>
               ) : (
-                <Button
+                <CheckoutButton
+                  plan={plan.id}
                   variant={plan.id === 'pro' ? 'default' : 'outline'}
                   className="w-full"
                 >
                   {subscription.plan === 'free' ? 'Upgraden' : 'Wechseln'}
-                </Button>
+                </CheckoutButton>
               )}
             </div>
           ))}
@@ -256,8 +376,16 @@ function SubscriptionSettings({ subscription }: SubscriptionSettingsProps) {
           </p>
 
           <div className="mt-6">
-            <Button variant="outline">
-              <ExternalLink className="mr-2 h-4 w-4" />
+            <Button
+              variant="outline"
+              onClick={handleOpenPortal}
+              disabled={isLoadingPortal}
+            >
+              {isLoadingPortal ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <ExternalLink className="mr-2 h-4 w-4" />
+              )}
               Kundenportal öffnen
             </Button>
           </div>
@@ -278,9 +406,49 @@ function ApiKeySettings({ subscription }: ApiKeySettingsProps) {
   const [anthropicKey, setAnthropicKey] = useState('')
   const [showOpenai, setShowOpenai] = useState(false)
   const [showAnthropic, setShowAnthropic] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const { toast } = useToast()
 
   const canUseApiKeys =
     subscription.plan === 'byok' || subscription.plan === 'pro'
+
+  const handleSaveKey = async (provider: 'openai' | 'anthropic') => {
+    const key = provider === 'openai' ? openaiKey : anthropicKey
+    if (!key) {
+      toast({ title: 'Kein API Key eingegeben', variant: 'destructive' })
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      const response = await fetch('/api/api-keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider, key }),
+      })
+
+      if (response.ok) {
+        toast({ title: 'API Key gespeichert' })
+        if (provider === 'openai') {
+          setOpenaiKey('')
+        } else {
+          setAnthropicKey('')
+        }
+      } else {
+        const data = await response.json()
+        toast({
+          title: 'Fehler',
+          description: data.error,
+          variant: 'destructive',
+        })
+      }
+    } catch (error) {
+      console.error('Failed to save API key:', error)
+      toast({ title: 'Verbindungsfehler', variant: 'destructive' })
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   if (!canUseApiKeys) {
     return (
@@ -332,7 +500,7 @@ function ApiKeySettings({ subscription }: ApiKeySettingsProps) {
                 value={openaiKey}
                 onChange={(e) => setOpenaiKey(e.target.value)}
                 placeholder="sk-..."
-                className="focus:border-brand-500 focus:ring-brand-500 flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:outline-none"
+                className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
               />
               <Button
                 variant="outline"
@@ -340,7 +508,16 @@ function ApiKeySettings({ subscription }: ApiKeySettingsProps) {
               >
                 {showOpenai ? 'Verstecken' : 'Anzeigen'}
               </Button>
-              <Button>Speichern</Button>
+              <Button
+                onClick={() => handleSaveKey('openai')}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  'Speichern'
+                )}
+              </Button>
             </div>
           </div>
 
@@ -358,7 +535,7 @@ function ApiKeySettings({ subscription }: ApiKeySettingsProps) {
                 value={anthropicKey}
                 onChange={(e) => setAnthropicKey(e.target.value)}
                 placeholder="sk-ant-..."
-                className="focus:border-brand-500 focus:ring-brand-500 flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:outline-none"
+                className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
               />
               <Button
                 variant="outline"
@@ -366,7 +543,16 @@ function ApiKeySettings({ subscription }: ApiKeySettingsProps) {
               >
                 {showAnthropic ? 'Verstecken' : 'Anzeigen'}
               </Button>
-              <Button>Speichern</Button>
+              <Button
+                onClick={() => handleSaveKey('anthropic')}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  'Speichern'
+                )}
+              </Button>
             </div>
           </div>
         </div>

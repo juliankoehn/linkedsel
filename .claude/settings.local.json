@@ -12,7 +12,18 @@
       "Bash(pnpm lint:fix:*)",
       "Bash(git add:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: initial project setup for LinkedSel\n\n- Next.js 15 with App Router and React 19\n- TailwindCSS v4 for styling with Radix UI components\n- Supabase for auth, database, and storage\n- Zustand for state management\n- Fabric.js for canvas-based carousel editor\n- LemonSqueezy integration for payments\n- PostHog for analytics\n- c15t for cookie consent\n- CI/CD pipeline with GitHub Actions\n- Full TypeScript support with strict mode\n\nIncludes landing pages \\(home, features, pricing, legal\\) and\napp pages \\(dashboard, editor, templates, brand-kits, settings\\).\nEOF\n\\)\")",
-      "Bash(pnpm add:*)"
+      "Bash(pnpm add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: complete MVP features and fix routing\n\n- Add LemonSqueezy webhook handler for subscription management\n- Add AI content generation with OpenAI/Anthropic support \\(BYOK\\)\n- Add watermark logic for free users on PDF export\n- Add templates system with default templates\n- Add brand kits page \\(premium feature\\)\n- Add settings page with subscription and API keys management\n- Fix all /app/ route paths \\(route groups don''t appear in URLs\\)\n- Update middleware to protect correct routes\n- Update database types for Supabase v2.47+\nEOF\n\\)\")",
+      "Bash(git push:*)",
+      "Bash(pnpm lint:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfix: editor image upload, undo/redo, and formatting tools\n\n- Add image upload via file input with FileReader\n- Fix undo/redo with proper history management and canvas reload\n- Add background color picker\n- Add fill color picker for selected objects\n- Add font size controls \\(+/-\\) for text objects\n- Add bold/italic toggles for text objects\n- Add selectedObject state tracking with canvas event handlers\n- Add saveHistory\\(\\) calls before all mutations\n- Fix disabled state for undo/redo buttons\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: comprehensive editor improvements\n\n- Add project save/load functionality with API routes\n- Add context menu \\(right-click\\) with z-order controls\n- Add format presets \\(LinkedIn, Instagram, Twitter, Facebook\\)\n- Add keyboard shortcuts \\(Ctrl+Z/Y, Delete, arrows, Ctrl+S\\)\n- Add live slide preview thumbnails in sidebar\n- Add project name editing in toolbar\n- Add duplicate/delete slide buttons on hover\n- Dashboard now lists saved projects with thumbnails\nEOF\n\\)\")",
+      "Bash(npm run build:*)",
+      "Bash(chmod:*)",
+      "Bash(grep:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npx tsc:*)",
+      "Bash(git commit:*)"
     ]
   }
 }

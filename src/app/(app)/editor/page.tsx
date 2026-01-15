@@ -3,11 +3,19 @@
 import { useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useState } from 'react'
 
+import { AIPanel } from '@/components/editor/ai-panel'
 import { EditorCanvas } from '@/components/editor/canvas'
 import { EditorSidebar } from '@/components/editor/sidebar'
 import { EditorToolbar } from '@/components/editor/toolbar'
+import { useToast } from '@/hooks/use-toast'
 import { getTemplateById } from '@/lib/templates/default-templates'
 import { useEditorStore } from '@/stores/editor'
+
+interface GeneratedSlide {
+  headline: string
+  body: string
+  callToAction?: string
+}
 
 function EditorContent() {
   const searchParams = useSearchParams()
@@ -15,16 +23,23 @@ function EditorContent() {
   const projectId = searchParams.get('project')
   const loadTemplate = useEditorStore((state) => state.loadTemplate)
   const loadProject = useEditorStore((state) => state.loadProject)
+  const applyAIContent = useEditorStore((state) => state.applyAIContent)
   const reset = useEditorStore((state) => state.reset)
   const [isLoading, setIsLoading] = useState(!!projectId)
+  const [isAIPanelOpen, setIsAIPanelOpen] = useState(false)
+  const { toast } = useToast()
 
   useEffect(() => {
     const initEditor = async () => {
       if (projectId) {
         setIsLoading(true)
-        const success = await loadProject(projectId)
-        if (!success) {
-          // If project load fails, reset to blank
+        const result = await loadProject(projectId)
+        if ('error' in result) {
+          toast({
+            title: 'Fehler beim Laden',
+            description: result.error,
+            variant: 'destructive',
+          })
           reset()
         }
         setIsLoading(false)
@@ -39,7 +54,8 @@ function EditorContent() {
     }
 
     initEditor()
-  }, [templateId, projectId, loadTemplate, loadProject, reset])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [templateId, projectId])
 
   if (isLoading) {
     return (
@@ -49,14 +65,30 @@ function EditorContent() {
     )
   }
 
+  const handleApplyAIContent = (slides: GeneratedSlide[]) => {
+    applyAIContent(slides)
+    toast({
+      title: 'AI Content angewendet',
+      description: `${slides.length} Slides wurden erstellt.`,
+    })
+  }
+
   return (
-    <div className="flex h-[calc(100vh-8rem)] gap-4">
-      <EditorSidebar />
-      <div className="flex flex-1 flex-col rounded-lg border bg-white">
-        <EditorToolbar />
-        <EditorCanvas />
+    <>
+      <div className="flex h-[calc(100vh-8rem)] gap-4">
+        <EditorSidebar />
+        <div className="flex flex-1 flex-col rounded-lg border bg-white">
+          <EditorToolbar onOpenAIPanel={() => setIsAIPanelOpen(true)} />
+          <EditorCanvas />
+        </div>
       </div>
-    </div>
+
+      <AIPanel
+        isOpen={isAIPanelOpen}
+        onClose={() => setIsAIPanelOpen(false)}
+        onApply={handleApplyAIContent}
+      />
+    </>
   )
 }
 

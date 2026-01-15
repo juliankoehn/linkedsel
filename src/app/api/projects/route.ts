@@ -36,11 +36,19 @@ export async function POST(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   if (!user) {
+    console.log('[POST /api/projects] No user found')
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  console.log('[POST /api/projects] User:', user.id)
+
   const body = await request.json()
   const { name, data } = body
+
+  console.log('[POST /api/projects] Creating project:', {
+    name,
+    dataKeys: data ? Object.keys(data) : [],
+  })
 
   const { data: project, error } = await supabase
     .from('projects')
@@ -53,8 +61,13 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (error) {
+    console.error('[POST /api/projects] Error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
+  console.log(
+    '[POST /api/projects] Created project:',
+    (project as { id: string }).id
+  )
   return NextResponse.json({ project }, { status: 201 })
 }
