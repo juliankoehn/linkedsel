@@ -100,16 +100,27 @@ interface LayerItemProps {
   depth: number
   onDragStart: (elementId: string) => void
   onDragEnd: () => void
-  onDrop: (targetId: string | null) => void
+  onDropInto: (targetId: string | null) => void
+  onReorder: (targetId: string, position: 'before' | 'after') => void
   draggedId: string | null
 }
 
-function LayerItem({ element, depth, onDragStart, onDragEnd, onDrop, draggedId }: LayerItemProps) {
+function LayerItem({
+  element,
+  depth,
+  onDragStart,
+  onDragEnd,
+  onDropInto,
+  onReorder,
+  draggedId,
+}: LayerItemProps) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
   const [editName, setEditName] = useState('')
   const [isDragOver, setIsDragOver] = useState(false)
+  const [dropPosition, setDropPosition] = useState<'before' | 'after' | 'into' | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const itemRef = useRef<HTMLDivElement>(null)
 
   const { selectedIds, select, toggleSelection } = useSelectionStore()
   const { updateElement, renameElement, slides } = useSlidesStore()
@@ -180,24 +191,53 @@ function LayerItem({ element, depth, onDragStart, onDragEnd, onDrop, draggedId }
   }
 
   const handleDragOver = (e: React.DragEvent) => {
-    if (!canAcceptDrop) return
+    if (!draggedId || draggedId === element.id) return
     e.preventDefault()
     e.stopPropagation()
+
+    const rect = itemRef.current?.getBoundingClientRect()
+    if (!rect) return
+
+    const y = e.clientY - rect.top
+    const height = rect.height
+    const threshold = height / 4
+
+    // Determine drop position based on mouse position
+    if (canAcceptDrop && y > threshold && y < height - threshold) {
+      // Middle - drop into container
+      setDropPosition('into')
+    } else if (y < height / 2) {
+      // Top half - before
+      setDropPosition('before')
+    } else {
+      // Bottom half - after
+      setDropPosition('after')
+    }
     setIsDragOver(true)
   }
 
   const handleDragLeave = (e: React.DragEvent) => {
     e.stopPropagation()
     setIsDragOver(false)
+    setDropPosition(null)
   }
 
-  const handleDropOnFrame = (e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
     setIsDragOver(false)
-    if (canAcceptDrop) {
-      onDrop(element.id)
+
+    if (!draggedId || draggedId === element.id) {
+      setDropPosition(null)
+      return
     }
+
+    if (dropPosition === 'into' && canAcceptDrop) {
+      onDropInto(element.id)
+    } else if (dropPosition === 'before' || dropPosition === 'after') {
+      onReorder(element.id, dropPosition)
+    }
+    setDropPosition(null)
   }
 
   const handleDragEnd = () => {
@@ -210,19 +250,27 @@ function LayerItem({ element, depth, onDragStart, onDragEnd, onDrop, draggedId }
   }
 
   return (
-    <div>
+    <div className="relative">
+      {/* Drop indicator - before */}
+      {isDragOver && dropPosition === 'before' && (
+        <div
+          className="absolute left-0 right-0 top-0 h-0.5 bg-blue-500"
+          style={{ marginLeft: `${depth * 12 + 4}px` }}
+        />
+      )}
       <div
+        ref={itemRef}
         draggable={!isEditing}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        onDrop={handleDropOnFrame}
+        onDrop={handleDrop}
         className={cn(
           'group flex h-7 cursor-pointer items-center gap-1 rounded px-1 text-xs transition-colors',
           isSelected ? 'bg-blue-100 text-blue-800' : 'hover:bg-gray-100',
           !element.visible && 'opacity-50',
-          isDragOver && canAcceptDrop && 'bg-blue-200 ring-2 ring-blue-400',
+          isDragOver && dropPosition === 'into' && 'bg-blue-200 ring-2 ring-blue-400',
           draggedId === element.id && 'opacity-30'
         )}
         style={{ paddingLeft: `${depth * 12 + 4}px` }}
@@ -281,6 +329,14 @@ function LayerItem({ element, depth, onDragStart, onDragEnd, onDrop, draggedId }
         )}
       </div>
 
+      {/* Drop indicator - after */}
+      {isDragOver && dropPosition === 'after' && !hasChildren && (
+        <div
+          className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500"
+          style={{ marginLeft: `${depth * 12 + 4}px` }}
+        />
+      )}
+
       {/* Children */}
       {hasChildren && isExpanded && children.length > 0 && (
         <div>
@@ -291,11 +347,17 @@ function LayerItem({ element, depth, onDragStart, onDragEnd, onDrop, draggedId }
               depth={depth + 1}
               onDragStart={onDragStart}
               onDragEnd={onDragEnd}
-              onDrop={onDrop}
+              onDropInto={onDropInto}
+              onReorder={onReorder}
               draggedId={draggedId}
             />
           ))}
         </div>
+      )}
+
+      {/* Drop indicator - after (for containers, show after children) */}
+      {isDragOver && dropPosition === 'after' && hasChildren && (
+        <div className="h-0.5 bg-blue-500" style={{ marginLeft: `${depth * 12 + 4}px` }} />
       )}
     </div>
   )
@@ -311,6 +373,7 @@ export function LayerPanel() {
     ungroupElement,
     createFrameFromElements,
     moveElementToParent,
+    reorderElement,
   } = useSlidesStore()
   const { selectedIds, clearSelection, select } = useSelectionStore()
   const { pushState } = useHistoryStore()
@@ -330,10 +393,18 @@ export function LayerPanel() {
     setDraggedId(null)
   }
 
-  const handleDrop = (targetParentId: string | null) => {
+  const handleDropInto = (targetParentId: string | null) => {
     if (!draggedId) return
     pushState(slides)
     moveElementToParent(draggedId, targetParentId)
+    markDirty()
+    setDraggedId(null)
+  }
+
+  const handleReorder = (targetId: string, position: 'before' | 'after') => {
+    if (!draggedId) return
+    pushState(slides)
+    reorderElement(draggedId, targetId, position)
     markDirty()
     setDraggedId(null)
   }
@@ -342,7 +413,7 @@ export function LayerPanel() {
   const handleRootDrop = (e: React.DragEvent) => {
     e.preventDefault()
     if (draggedId) {
-      handleDrop(null)
+      handleDropInto(null)
     }
   }
 
@@ -441,7 +512,8 @@ export function LayerPanel() {
               depth={0}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
-              onDrop={handleDrop}
+              onDropInto={handleDropInto}
+              onReorder={handleReorder}
               draggedId={draggedId}
             />
           ))

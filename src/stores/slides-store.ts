@@ -245,6 +245,7 @@ interface SlidesActions {
   createFrameFromElements: (ids: string[]) => string | null
   updateFrameLayout: (id: string) => void
   moveElementToParent: (elementId: string, targetParentId: string | null) => void
+  reorderElement: (elementId: string, targetId: string, position: 'before' | 'after') => void
   renameElement: (id: string, name: string) => void
 
   // Helpers
@@ -938,6 +939,50 @@ export const useSlidesStore = create<SlidesStore>()(
             targetParentId
           )
 
+          return { slides: newSlides }
+        })
+      },
+
+      reorderElement: (elementId, targetId, position) => {
+        set((state) => {
+          const newSlides = [...state.slides]
+          const currentSlide = newSlides[state.currentSlideIndex]
+          if (!currentSlide || elementId === targetId) return { slides: newSlides }
+
+          // Helper to reorder within an array
+          const reorderInArray = (elements: CanvasElement[]): CanvasElement[] => {
+            const elementIndex = elements.findIndex((el) => el.id === elementId)
+            const targetIndex = elements.findIndex((el) => el.id === targetId)
+
+            // Both elements must be in the same array
+            if (elementIndex === -1 || targetIndex === -1) {
+              // Try recursively in children
+              return elements.map((el) => {
+                if (el.type === 'group' || el.type === 'frame') {
+                  const container = el as GroupElement | FrameElement
+                  return {
+                    ...container,
+                    children: reorderInArray(container.children),
+                  } as CanvasElement
+                }
+                return el
+              })
+            }
+
+            // Remove element from current position
+            const [element] = elements.splice(elementIndex, 1)
+            if (!element) return elements
+
+            // Find new target index (may have shifted after removal)
+            const newTargetIndex = elements.findIndex((el) => el.id === targetId)
+            const insertIndex = position === 'before' ? newTargetIndex : newTargetIndex + 1
+
+            // Insert at new position
+            elements.splice(insertIndex, 0, element)
+            return elements
+          }
+
+          currentSlide.elements = reorderInArray(currentSlide.elements)
           return { slides: newSlides }
         })
       },

@@ -868,7 +868,7 @@ export function KonvaCanvas() {
 
                     {/* Slide canvas */}
                     <div
-                      className={`relative rounded-lg bg-white shadow-lg transition-shadow ${
+                      className={`relative bg-white shadow-lg transition-shadow ${
                         isCurrentSlide ? 'ring-2 ring-blue-500' : ''
                       }`}
                       onClick={() => {
