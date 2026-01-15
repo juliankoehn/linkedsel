@@ -11,7 +11,8 @@
       "Bash(pnpm build:*)",
       "Bash(pnpm lint:fix:*)",
       "Bash(git add:*)",
-      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: initial project setup for LinkedSel\n\n- Next.js 15 with App Router and React 19\n- TailwindCSS v4 for styling with Radix UI components\n- Supabase for auth, database, and storage\n- Zustand for state management\n- Fabric.js for canvas-based carousel editor\n- LemonSqueezy integration for payments\n- PostHog for analytics\n- c15t for cookie consent\n- CI/CD pipeline with GitHub Actions\n- Full TypeScript support with strict mode\n\nIncludes landing pages \\(home, features, pricing, legal\\) and\napp pages \\(dashboard, editor, templates, brand-kits, settings\\).\nEOF\n\\)\")"
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: initial project setup for LinkedSel\n\n- Next.js 15 with App Router and React 19\n- TailwindCSS v4 for styling with Radix UI components\n- Supabase for auth, database, and storage\n- Zustand for state management\n- Fabric.js for canvas-based carousel editor\n- LemonSqueezy integration for payments\n- PostHog for analytics\n- c15t for cookie consent\n- CI/CD pipeline with GitHub Actions\n- Full TypeScript support with strict mode\n\nIncludes landing pages \\(home, features, pricing, legal\\) and\napp pages \\(dashboard, editor, templates, brand-kits, settings\\).\nEOF\n\\)\")",
+      "Bash(pnpm add:*)"
     ]
   }
 }

@@ -12,7 +12,7 @@ function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const searchParams = useSearchParams()
-  const redirect = searchParams.get('redirect') || '/app/dashboard'
+  const redirect = searchParams.get('redirect') || '/dashboard'
 
   const handleGoogleLogin = async () => {
     setIsLoading(true)

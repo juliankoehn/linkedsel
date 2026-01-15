@@ -16,7 +16,7 @@ export default function DashboardPage() {
           </p>
         </div>
         <Button asChild>
-          <Link href="/app/editor">
+          <Link href="/editor">
             <Plus className="mr-2 h-4 w-4" />
             Neues Carousel
           </Link>
@@ -34,7 +34,7 @@ export default function DashboardPage() {
         </p>
         <div className="mt-6">
           <Button asChild>
-            <Link href="/app/editor">
+            <Link href="/editor">
               <Plus className="mr-2 h-4 w-4" />
               Carousel erstellen
             </Link>

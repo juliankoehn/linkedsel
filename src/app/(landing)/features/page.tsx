@@ -101,7 +101,7 @@ export default function FeaturesPage() {
 
         <div className="mt-16 text-center">
           <Button asChild size="lg">
-            <Link href="/app/editor">Jetzt kostenlos testen</Link>
+            <Link href="/editor">Jetzt kostenlos testen</Link>
           </Button>
         </div>
       </div>

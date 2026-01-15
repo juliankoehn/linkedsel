@@ -48,7 +48,7 @@ export function EditorToolbar() {
       </div>
 
       <div className="flex items-center gap-2">
-        <Button onClick={exportPDF}>
+        <Button onClick={() => exportPDF()}>
           <Download className="mr-2 h-4 w-4" />
           Export PDF
         </Button>

@@ -24,7 +24,7 @@ const tiers = [
       'Watermark auf Exports',
     ],
     cta: 'Kostenlos starten',
-    href: '/app/editor',
+    href: '/editor',
     featured: false,
   },
   {
@@ -42,7 +42,7 @@ const tiers = [
       'Priority Support',
     ],
     cta: 'Pro werden',
-    href: '/app/settings?upgrade=pro',
+    href: '/settings?upgrade=pro',
     featured: true,
   },
   {
@@ -60,7 +60,7 @@ const tiers = [
       'Niedrigere Kosten',
     ],
     cta: 'Mit eigenem Key starten',
-    href: '/app/settings?upgrade=byok',
+    href: '/settings?upgrade=byok',
     featured: false,
   },
 ]

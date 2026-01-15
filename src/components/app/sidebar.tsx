@@ -13,11 +13,11 @@ import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
 const navigation = [
-  { name: 'Dashboard', href: '/app/dashboard', icon: LayoutDashboard },
-  { name: 'Editor', href: '/app/editor', icon: PenTool },
-  { name: 'Templates', href: '/app/templates', icon: LayoutTemplate },
-  { name: 'Brand Kits', href: '/app/brand-kits', icon: Palette },
-  { name: 'Einstellungen', href: '/app/settings', icon: Settings },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Editor', href: '/editor', icon: PenTool },
+  { name: 'Templates', href: '/templates', icon: LayoutTemplate },
+  { name: 'Brand Kits', href: '/brand-kits', icon: Palette },
+  { name: 'Einstellungen', href: '/settings', icon: Settings },
 ]
 
 export function AppSidebar() {

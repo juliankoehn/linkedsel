@@ -23,8 +23,8 @@ export interface Database {
         Insert: {
           id?: string
           user_id: string
-          plan: string
-          status: string
+          plan?: string
+          status?: string
           lemon_subscription_id?: string | null
           current_period_end?: string | null
           created_at?: string
@@ -40,6 +40,15 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: 'subscriptions_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
       }
       projects: {
         Row: {
@@ -69,6 +78,15 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: 'projects_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
       }
       brand_kits: {
         Row: {
@@ -101,6 +119,15 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: 'brand_kits_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
       }
       templates: {
         Row: {
@@ -133,6 +160,15 @@ export interface Database {
           created_by?: string | null
           created_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: 'templates_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
       }
       api_keys: {
         Row: {
@@ -156,6 +192,15 @@ export interface Database {
           encrypted_key?: string
           created_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: 'api_keys_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
       }
     }
     Views: {
@@ -165,6 +210,9 @@ export interface Database {
       [_ in never]: never
     }
     Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
       [_ in never]: never
     }
   }

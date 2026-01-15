@@ -21,7 +21,7 @@ export default function HomePage() {
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-4">
               <Button asChild size="lg">
-                <Link href="/app/editor">
+                <Link href="/editor">
                   Jetzt starten
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
@@ -106,7 +106,7 @@ export default function HomePage() {
                 variant="secondary"
                 className="text-brand-600 hover:bg-brand-50 bg-white"
               >
-                <Link href="/app/editor">Jetzt kostenlos erstellen</Link>
+                <Link href="/editor">Jetzt kostenlos erstellen</Link>
               </Button>
             </div>
           </div>

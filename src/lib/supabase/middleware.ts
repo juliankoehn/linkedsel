@@ -44,11 +44,18 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   // Protected routes - require authentication
-  if (
-    !user &&
-    request.nextUrl.pathname.startsWith('/app') &&
-    !request.nextUrl.pathname.startsWith('/auth')
-  ) {
+  const protectedRoutes = [
+    '/dashboard',
+    '/editor',
+    '/templates',
+    '/brand-kits',
+    '/settings',
+  ]
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    request.nextUrl.pathname.startsWith(route)
+  )
+
+  if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
     url.searchParams.set('redirect', request.nextUrl.pathname)

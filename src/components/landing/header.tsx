@@ -30,7 +30,7 @@ export function Header() {
             <Link href="/auth/login">Anmelden</Link>
           </Button>
           <Button asChild>
-            <Link href="/app/editor">Starten</Link>
+            <Link href="/editor">Starten</Link>
           </Button>
         </div>
       </div>
