@@ -6,6 +6,7 @@ import { Suspense, useCallback, useEffect, useState } from 'react'
 
 import { AIPanel } from '@/components/editor/ai-panel'
 import { KonvaCanvas } from '@/components/editor/konva-canvas'
+import { PropertiesPanel } from '@/components/editor/properties-panel'
 import { EditorSidebar } from '@/components/editor/sidebar'
 import { EditorToolbar } from '@/components/editor/toolbar'
 import { useToast } from '@/hooks/use-toast'
@@ -265,6 +266,7 @@ function EditorContent() {
           <EditorToolbar onOpenAIPanel={() => setIsAIPanelOpen(true)} />
           <KonvaCanvas />
         </div>
+        <PropertiesPanel />
       </div>
 
       <AIPanel

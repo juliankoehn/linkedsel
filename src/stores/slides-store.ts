@@ -188,6 +188,13 @@ interface SlidesActions {
   bringForward: (id: string) => void
   sendBackward: (id: string) => void
 
+  // Alignment
+  alignElements: (
+    ids: string[],
+    alignment: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom'
+  ) => void
+  distributeElements: (ids: string[], direction: 'horizontal' | 'vertical') => void
+
   // Helpers
   getElementById: (id: string) => CanvasElement | undefined
   getCurrentSlide: () => Slide | undefined
@@ -441,6 +448,109 @@ export const useSlidesStore = create<SlidesStore>()(
               }
             }
           }
+          return { slides: newSlides }
+        })
+      },
+
+      // Alignment
+      alignElements: (ids, alignment) => {
+        set((state) => {
+          const newSlides = [...state.slides]
+          const currentSlide = newSlides[state.currentSlideIndex]
+          if (!currentSlide || ids.length < 2) return { slides: newSlides }
+
+          const elements = currentSlide.elements.filter((el) => ids.includes(el.id))
+          if (elements.length < 2) return { slides: newSlides }
+
+          // Calculate bounds
+          let minX = Infinity,
+            minY = Infinity,
+            maxX = -Infinity,
+            maxY = -Infinity
+          for (const el of elements) {
+            minX = Math.min(minX, el.x)
+            minY = Math.min(minY, el.y)
+            maxX = Math.max(maxX, el.x + el.width)
+            maxY = Math.max(maxY, el.y + el.height)
+          }
+
+          const centerX = (minX + maxX) / 2
+          const centerY = (minY + maxY) / 2
+
+          // Apply alignment
+          currentSlide.elements = currentSlide.elements.map((el) => {
+            if (!ids.includes(el.id)) return el
+            switch (alignment) {
+              case 'left':
+                return { ...el, x: minX }
+              case 'center':
+                return { ...el, x: centerX - el.width / 2 }
+              case 'right':
+                return { ...el, x: maxX - el.width }
+              case 'top':
+                return { ...el, y: minY }
+              case 'middle':
+                return { ...el, y: centerY - el.height / 2 }
+              case 'bottom':
+                return { ...el, y: maxY - el.height }
+              default:
+                return el
+            }
+          })
+
+          return { slides: newSlides }
+        })
+      },
+
+      distributeElements: (ids, direction) => {
+        set((state) => {
+          const newSlides = [...state.slides]
+          const currentSlide = newSlides[state.currentSlideIndex]
+          if (!currentSlide || ids.length < 3) return { slides: newSlides }
+
+          const elements = currentSlide.elements
+            .filter((el) => ids.includes(el.id))
+            .sort((a, b) => (direction === 'horizontal' ? a.x - b.x : a.y - b.y))
+
+          if (elements.length < 3) return { slides: newSlides }
+
+          const first = elements[0]!
+          const last = elements[elements.length - 1]!
+
+          if (direction === 'horizontal') {
+            const totalWidth = last.x + last.width - first.x
+            const elementWidths = elements.reduce((sum, el) => sum + el.width, 0)
+            const gap = (totalWidth - elementWidths) / (elements.length - 1)
+
+            let currentX = first.x
+            const updates = new Map<string, number>()
+            for (const el of elements) {
+              updates.set(el.id, currentX)
+              currentX += el.width + gap
+            }
+
+            currentSlide.elements = currentSlide.elements.map((el) => {
+              const newX = updates.get(el.id)
+              return newX !== undefined ? { ...el, x: newX } : el
+            })
+          } else {
+            const totalHeight = last.y + last.height - first.y
+            const elementHeights = elements.reduce((sum, el) => sum + el.height, 0)
+            const gap = (totalHeight - elementHeights) / (elements.length - 1)
+
+            let currentY = first.y
+            const updates = new Map<string, number>()
+            for (const el of elements) {
+              updates.set(el.id, currentY)
+              currentY += el.height + gap
+            }
+
+            currentSlide.elements = currentSlide.elements.map((el) => {
+              const newY = updates.get(el.id)
+              return newY !== undefined ? { ...el, y: newY } : el
+            })
+          }
+
           return { slides: newSlides }
         })
       },

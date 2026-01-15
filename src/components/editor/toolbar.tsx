@@ -29,7 +29,9 @@ import {
   Undo,
 } from 'lucide-react'
 import { useRef, useState } from 'react'
+import { AlignmentToolbar } from '@/components/editor/alignment-toolbar'
 import { ColorButton } from '@/components/editor/color-picker'
+import { IconPicker } from '@/components/editor/icon-picker'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -47,6 +49,7 @@ import { useSelectionStore } from '@/stores/selection-store'
 import {
   createArrowElement,
   createCircleElement,
+  createIconElement,
   createImageElement,
   createLineElement,
   createPolygonElement,
@@ -169,6 +172,20 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
       default:
         return
     }
+    addElement(element)
+    useSelectionStore.getState().select(element.id)
+    useProjectStore.getState().markDirty()
+  }
+
+  // Add icon
+  const addIcon = (iconName: string) => {
+    pushState(slides)
+    const element = createIconElement(iconName, {
+      x: width / 2 - 24,
+      y: height / 2 - 24,
+      width: 48,
+      height: 48,
+    })
     addElement(element)
     useSelectionStore.getState().select(element.id)
     useProjectStore.getState().markDirty()
@@ -430,6 +447,7 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
           <Button variant="ghost" size="icon" onClick={handleImageUpload} title="Upload image">
             <ImageIcon className="h-4 w-4" />
           </Button>
+          <IconPicker onSelectIcon={addIcon} />
 
           <div className="mx-1 h-6 w-px bg-gray-200" />
 
@@ -566,6 +584,9 @@ export function EditorToolbar({ onOpenAIPanel }: EditorToolbarProps) {
               )}
             </>
           )}
+
+          {/* Alignment toolbar - shows when 2+ elements selected */}
+          <AlignmentToolbar />
 
           <div className="mx-2 h-6 w-px bg-gray-200" />
 
