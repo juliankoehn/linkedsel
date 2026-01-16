@@ -284,8 +284,8 @@ export function useAIGeneration() {
                       completedSlides.push(newSlide)
                       pendingSlideRef.current = null
 
-                      // Update store with completed slides
-                      setSlides([...slides, ...completedSlides])
+                      // Replace slides with generated ones (don't append)
+                      setSlides(completedSlides)
                       markDirty()
 
                       setState((prev) => ({

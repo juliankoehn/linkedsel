@@ -89,12 +89,14 @@ DESIGN GUIDELINES:
 - The first slide should be a hook that grabs attention
 - The last slide should have a call-to-action
 
-WORKFLOW:
-1. Call create_slide with background color
-2. Add text elements (headline first, then body)
-3. Optionally add shapes for visual interest
-4. Call complete_slide when done
-5. Repeat for each slide
+WORKFLOW - YOU MUST FOLLOW THESE STEPS FOR EACH SLIDE:
+1. ALWAYS call create_slide first with a background color
+2. ALWAYS call add_text for the headline (large text at top)
+3. ALWAYS call add_text for the body text (smaller text below headline)
+4. Optionally add shapes with add_rectangle or add_circle for visual interest
+5. ALWAYS call complete_slide when done with a slide
+
+CRITICAL: Every slide MUST have at least a headline and body text. Do not create empty slides.
 
 Create exactly the number of slides requested. Make each slide visually distinct but cohesive as a series.`
 }
@@ -275,6 +277,19 @@ export async function POST(request: NextRequest) {
 
             const slideMessage = slideResponse.choices[0]?.message
             const slideToolCalls = slideMessage?.tool_calls || []
+
+            // Ensure create_slide is called first
+            const hasCreateSlide = slideToolCalls.some(
+              (tc) => tc.type === 'function' && tc.function.name === 'create_slide'
+            )
+            if (!hasCreateSlide) {
+              // Send default create_slide with white background
+              send({
+                type: 'tool_call',
+                data: { tool: 'create_slide', args: { backgroundColor: '#ffffff' } },
+              })
+              await new Promise((resolve) => setTimeout(resolve, 50))
+            }
 
             for (const toolCall of slideToolCalls) {
               // Skip non-function tool calls
