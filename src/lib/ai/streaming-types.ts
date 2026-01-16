@@ -18,6 +18,7 @@ export interface CarouselGenerationRequest {
   existingSlides?: ExistingSlideContext[]
   canvasWidth: number
   canvasHeight: number
+  useImages?: boolean
 }
 
 export interface ExistingSlideContext {
@@ -64,7 +65,7 @@ export interface StartEventData {
 }
 
 export interface StepStartEventData {
-  step: 'content' | 'design' | 'layout' | 'validation' | 'refinement' | 'generate'
+  step: 'content' | 'design' | 'images' | 'layout' | 'validation' | 'refinement' | 'generate'
   message: string
 }
 

@@ -39,16 +39,38 @@ export const CircleElementSchema = z.object({
   opacity: z.number().min(0).max(1).default(1),
 })
 
+// Image element schema
+export const ImageElementSchema = z.object({
+  type: z.literal('image'),
+  x: z.number().describe('X position from left edge'),
+  y: z.number().describe('Y position from top edge'),
+  width: z.number().describe('Width of the image'),
+  height: z.number().describe('Height of the image'),
+  src: z.string().describe('URL of the image'),
+  objectFit: z.enum(['cover', 'contain', 'fill']).default('cover'),
+  opacity: z.number().min(0).max(1).default(1),
+  cornerRadius: z.number().default(0),
+})
+
+// Background image schema (for full-slide backgrounds)
+export const BackgroundImageSchema = z.object({
+  src: z.string().describe('URL of the background image'),
+  opacity: z.number().min(0).max(1).default(1),
+  overlay: z.string().optional().describe('Overlay color in hex with alpha, e.g., rgba(0,0,0,0.5)'),
+})
+
 // Union of all element types
 export const ElementSchema = z.discriminatedUnion('type', [
   TextElementSchema,
   RectElementSchema,
   CircleElementSchema,
+  ImageElementSchema,
 ])
 
 // Single slide schema
 export const SlideSchema = z.object({
   backgroundColor: z.string().describe('Background color in hex format'),
+  backgroundImage: BackgroundImageSchema.optional().describe('Optional background image'),
   elements: z.array(ElementSchema).describe('Elements on the slide'),
 })
 
@@ -61,6 +83,8 @@ export const CarouselSchema = z.object({
 export type TextElementData = z.infer<typeof TextElementSchema>
 export type RectElementData = z.infer<typeof RectElementSchema>
 export type CircleElementData = z.infer<typeof CircleElementSchema>
+export type ImageElementData = z.infer<typeof ImageElementSchema>
+export type BackgroundImageData = z.infer<typeof BackgroundImageSchema>
 export type ElementData = z.infer<typeof ElementSchema>
 export type SlideData = z.infer<typeof SlideSchema>
 export type CarouselData = z.infer<typeof CarouselSchema>
@@ -82,6 +106,19 @@ export const carouselJsonSchema = {
               type: 'string',
               description: 'Background color in hex format (e.g., #ffffff)',
             },
+            backgroundImage: {
+              type: ['object', 'null'],
+              properties: {
+                src: { type: 'string', description: 'URL of the background image' },
+                opacity: { type: 'number', description: 'Opacity 0-1' },
+                overlay: {
+                  type: ['string', 'null'],
+                  description: 'Overlay color, e.g., rgba(0,0,0,0.5)',
+                },
+              },
+              required: ['src', 'opacity', 'overlay'],
+              additionalProperties: false,
+            },
             elements: {
               type: 'array',
               items: {
@@ -89,7 +126,7 @@ export const carouselJsonSchema = {
                 properties: {
                   type: {
                     type: 'string',
-                    enum: ['text', 'rectangle', 'circle'],
+                    enum: ['text', 'rectangle', 'circle', 'image'],
                   },
                   // Text properties (null when not text type)
                   text: { type: ['string', 'null'] },
@@ -109,6 +146,12 @@ export const carouselJsonSchema = {
                   cornerRadius: { type: ['number', 'null'] },
                   radius: { type: ['number', 'null'] },
                   opacity: { type: ['number', 'null'] },
+                  // Image properties (null when not image type)
+                  src: { type: ['string', 'null'], description: 'Image URL' },
+                  objectFit: {
+                    type: ['string', 'null'],
+                    enum: ['cover', 'contain', 'fill', null],
+                  },
                 },
                 required: [
                   'type',
@@ -125,12 +168,14 @@ export const carouselJsonSchema = {
                   'cornerRadius',
                   'radius',
                   'opacity',
+                  'src',
+                  'objectFit',
                 ],
                 additionalProperties: false,
               },
             },
           },
-          required: ['backgroundColor', 'elements'],
+          required: ['backgroundColor', 'backgroundImage', 'elements'],
           additionalProperties: false,
         },
       },

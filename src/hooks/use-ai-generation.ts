@@ -23,6 +23,7 @@ import { useProjectStore } from '@/stores/project-store'
 import {
   type CanvasElement,
   createCircleElement,
+  createImageElement,
   createRectElement,
   createTextElement,
   type Slide,
@@ -46,6 +47,7 @@ export interface AIGenerationOptions {
   language: 'de' | 'en'
   quality: QualityTier
   brandKit?: BrandKit | null
+  useImages?: boolean
 }
 
 export function useAIGeneration() {
@@ -105,6 +107,15 @@ export function useAIGeneration() {
             fill: el.fill,
             opacity: el.opacity ?? 1,
           })
+        case 'image':
+          return createImageElement(el.src, {
+            id: nanoid(),
+            x: el.x,
+            y: el.y,
+            width: el.width,
+            height: el.height,
+            opacity: el.opacity ?? 1,
+          })
         default:
           throw new Error(`Unknown element type`)
       }
@@ -160,6 +171,7 @@ export function useAIGeneration() {
         existingSlides: existingSlides.length > 0 ? existingSlides : undefined,
         canvasWidth: width,
         canvasHeight: height,
+        useImages: options.useImages,
       }
 
       try {

@@ -6,10 +6,11 @@
 import OpenAI from 'openai'
 
 import type { BrandKit } from '@/types/brand-kit'
-
+import { searchImages, type UnsplashImage } from '../../unsplash'
 import { type CarouselData, carouselJsonSchema, type SlideData } from '../carousel-schema'
 import { buildContentOutlinePrompt } from '../prompts/content-outline-prompt'
 import { buildDesignSystemPrompt } from '../prompts/design-system-prompt'
+import { buildImageKeywordsPrompt } from '../prompts/image-keywords-prompt'
 import { buildLayoutPrompt } from '../prompts/layout-prompt'
 import { buildRefinementPrompt, type ValidationError } from '../prompts/refinement-prompt'
 import {
@@ -18,6 +19,7 @@ import {
   type SlideContent,
 } from '../schemas/content-outline'
 import { type DesignSystem, designSystemJsonSchema } from '../schemas/design-system'
+import { type ImagePlan, imagePlanJsonSchema } from '../schemas/image-keywords'
 import {
   getInvalidSlideIndices,
   getSlideErrors,
@@ -37,6 +39,14 @@ export interface PipelineConfig {
   brandKit?: BrandKit | null
   canvasWidth: number
   canvasHeight: number
+  useImages?: boolean
+}
+
+// Image data passed to layout generation
+export interface SlideImageData {
+  slideIndex: number
+  imageType: 'background' | 'element' | 'none'
+  image: UnsplashImage | null
 }
 
 export interface PipelineEvent {
@@ -117,12 +127,23 @@ export class GenerationPipeline {
   async run(): Promise<CarouselData> {
     const { quality } = this.config
 
+    const hasImages = this.config.useImages && quality !== 'basic'
     this.emit({
       type: 'start',
       data: {
         quality,
         totalSlides: this.config.slideCount,
-        steps: quality === 'basic' ? 1 : quality === 'standard' ? 4 : 5,
+        steps:
+          quality === 'basic'
+            ? 1
+            : quality === 'standard'
+              ? hasImages
+                ? 5
+                : 4
+              : hasImages
+                ? 6
+                : 5,
+        useImages: hasImages,
       },
     })
 
@@ -198,7 +219,7 @@ export class GenerationPipeline {
    * Multi-step pipeline for standard/premium quality
    */
   private async runMultiStepPipeline(): Promise<CarouselData> {
-    const { quality } = this.config
+    const { quality, useImages } = this.config
 
     // Step 1: Generate content outline
     this.checkAbort()
@@ -224,13 +245,31 @@ export class GenerationPipeline {
       data: { step: 'design', designSystem },
     })
 
+    // Step 2.5: Generate image keywords and fetch images (if enabled)
+    let slideImages: SlideImageData[] = []
+    if (useImages) {
+      this.checkAbort()
+      this.emit({
+        type: 'step_start',
+        data: { step: 'images', message: 'Finding images...' },
+      })
+      slideImages = await this.generateAndFetchImages(contentOutline)
+      this.emit({
+        type: 'step_complete',
+        data: {
+          step: 'images',
+          imagesFound: slideImages.filter((s) => s.image !== null).length,
+        },
+      })
+    }
+
     // Step 3: Generate layouts for each slide
     this.checkAbort()
     this.emit({
       type: 'step_start',
       data: { step: 'layout', message: 'Generating slide layouts...' },
     })
-    const slides = await this.generateLayouts(contentOutline, designSystem)
+    const slides = await this.generateLayouts(contentOutline, designSystem, slideImages)
     this.emit({
       type: 'step_complete',
       data: { step: 'layout', slideCount: slides.length },
@@ -352,11 +391,89 @@ export class GenerationPipeline {
   }
 
   /**
+   * Step 2.5: Generate image keywords and fetch images from Unsplash
+   */
+  private async generateAndFetchImages(contentOutline: ContentOutline): Promise<SlideImageData[]> {
+    // Generate image keywords using AI
+    const { system, user } = buildImageKeywordsPrompt({
+      contentOutline,
+      style: this.config.style,
+    })
+
+    const response = await this.openai.chat.completions.create({
+      model: getModelForStep(this.config.quality, 'images'),
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user },
+      ],
+      response_format: {
+        type: 'json_schema',
+        json_schema: imagePlanJsonSchema,
+      },
+    })
+
+    const content = response.choices[0]?.message?.content
+    if (!content) {
+      console.warn('Failed to generate image keywords, continuing without images')
+      return []
+    }
+
+    const imagePlan: ImagePlan = JSON.parse(content)
+    const slideImages: SlideImageData[] = []
+
+    // Fetch images from Unsplash for each slide that needs one
+    for (const slideKeywords of imagePlan.slides) {
+      if (!slideKeywords.useImage || slideKeywords.imageType === 'none') {
+        slideImages.push({
+          slideIndex: slideKeywords.slideIndex,
+          imageType: 'none',
+          image: null,
+        })
+        continue
+      }
+
+      this.emit({
+        type: 'progress',
+        data: {
+          message: `Finding image for slide ${slideKeywords.slideIndex + 1}...`,
+        },
+      })
+
+      try {
+        // Search for images on Unsplash
+        // Use 'squarish' for carousel format
+        const result = await searchImages(slideKeywords.keywords, {
+          perPage: 3,
+          orientation: 'squarish',
+        })
+
+        const image = result.images[0] || null
+
+        slideImages.push({
+          slideIndex: slideKeywords.slideIndex,
+          imageType: slideKeywords.imageType,
+          image,
+        })
+      } catch (error) {
+        console.error(`Failed to fetch image for slide ${slideKeywords.slideIndex}:`, error)
+        slideImages.push({
+          slideIndex: slideKeywords.slideIndex,
+          imageType: 'none',
+          image: null,
+        })
+      }
+    }
+
+    return slideImages
+  }
+
+  /**
    * Step 3: Generate layouts for all slides
    */
   private async generateLayouts(
     contentOutline: ContentOutline,
-    designSystem: DesignSystem
+    designSystem: DesignSystem,
+    slideImages: SlideImageData[] = []
   ): Promise<SlideData[]> {
     const slides: SlideData[] = []
 
@@ -375,11 +492,15 @@ export class GenerationPipeline {
       const slideContent = contentOutline.slides[i]
       if (!slideContent) continue
 
+      // Find image data for this slide
+      const imageData = slideImages.find((s) => s.slideIndex === i) || null
+
       const slide = await this.generateSlideLayout(
         slideContent,
         i,
         contentOutline.slides.length,
-        designSystem
+        designSystem,
+        imageData
       )
       slides.push(slide)
     }
@@ -394,7 +515,8 @@ export class GenerationPipeline {
     slideContent: SlideContent,
     slideIndex: number,
     totalSlides: number,
-    designSystem: DesignSystem
+    designSystem: DesignSystem,
+    imageData?: SlideImageData | null
   ): Promise<SlideData> {
     const { system, user } = buildLayoutPrompt({
       slideContent,
@@ -403,6 +525,7 @@ export class GenerationPipeline {
       designSystem,
       canvasWidth: this.config.canvasWidth,
       canvasHeight: this.config.canvasHeight,
+      imageData: imageData || undefined,
     })
 
     // For layout, we use the slide schema

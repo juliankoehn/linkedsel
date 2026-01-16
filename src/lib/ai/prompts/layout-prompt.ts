@@ -3,6 +3,7 @@
  * Generates precise element positions based on content and design system
  */
 
+import type { SlideImageData } from '../pipeline/generation-pipeline'
 import type { SlideContent } from '../schemas/content-outline'
 import type { DesignSystem } from '../schemas/design-system'
 
@@ -13,6 +14,7 @@ export interface LayoutPromptContext {
   designSystem: DesignSystem
   canvasWidth: number
   canvasHeight: number
+  imageData?: SlideImageData
 }
 
 /**
@@ -244,7 +246,15 @@ export function buildLayoutPrompt(context: LayoutPromptContext): {
   system: string
   user: string
 } {
-  const { slideContent, slideIndex, totalSlides, designSystem, canvasWidth, canvasHeight } = context
+  const {
+    slideContent,
+    slideIndex,
+    totalSlides,
+    designSystem,
+    canvasWidth,
+    canvasHeight,
+    imageData,
+  } = context
   const { colors, typography, spacing, decorative } = designSystem
 
   // Calculate recommended sizes based on canvas
@@ -288,9 +298,10 @@ TEXTHÖHEN-BERECHNUNG (WICHTIG!):
 - Dekorative Linien MÜSSEN UNTER dem Text platziert werden: y = textY + (fontSize × 1.4 × zeilen) + ${Math.round(canvasHeight * 0.02)}px Abstand
 
 ELEMENT-TYPEN (alle Felder müssen gesetzt sein, nicht benötigte als null):
-- "text": text, x, y, width, fontSize, fontWeight, color, textAlign (+ null für: height, fill, cornerRadius, radius, opacity)
-- "rectangle": x, y, width, height, fill, cornerRadius, opacity (+ null für: text, fontSize, fontWeight, color, textAlign, radius)
-- "circle": x (Zentrum), y (Zentrum), radius, fill, opacity (+ null für: text, width, height, fontSize, fontWeight, color, textAlign, cornerRadius)
+- "text": text, x, y, width, fontSize, fontWeight, color, textAlign (+ null für: height, fill, cornerRadius, radius, opacity, src, objectFit)
+- "rectangle": x, y, width, height, fill, cornerRadius, opacity (+ null für: text, fontSize, fontWeight, color, textAlign, radius, src, objectFit)
+- "circle": x (Zentrum), y (Zentrum), radius, fill, opacity (+ null für: text, width, height, fontSize, fontWeight, color, textAlign, cornerRadius, src, objectFit)
+- "image": src, x, y, width, height, objectFit, opacity, cornerRadius (+ null für: text, fontSize, fontWeight, color, textAlign, radius, fill)
 
 WICHTIG:
 - Alle Positionen sind ABSOLUTE Pixel-Werte
@@ -310,14 +321,43 @@ ${layoutExamples}`
 
   const contentJson = JSON.stringify(slideContent, null, 2)
 
+  // Build image instructions if image data is available
+  let imageInstructions = ''
+  if (imageData?.image && imageData.imageType !== 'none') {
+    const img = imageData.image
+    if (imageData.imageType === 'background') {
+      imageInstructions = `
+BILD VERFÜGBAR (als Hintergrund verwenden):
+- URL: ${img.url}
+- Setze "backgroundImage" mit:
+  - src: "${img.url}"
+  - opacity: 0.3-0.5 (damit Text lesbar bleibt)
+  - overlay: "rgba(0,0,0,0.4)" (dunkles Overlay für besseren Kontrast)
+- Text sollte weiß oder sehr hell sein bei Hintergrundbild
+- Photographer Credit: ${img.photographer}`
+    } else if (imageData.imageType === 'element') {
+      imageInstructions = `
+BILD VERFÜGBAR (als Element platzieren):
+- URL: ${img.url}
+- Füge ein "image" Element hinzu:
+  - src: "${img.url}"
+  - Empfohlene Größe: ${Math.round(canvasWidth * 0.4)}x${Math.round(canvasWidth * 0.4)}px
+  - objectFit: "cover"
+  - cornerRadius: 8-16 für abgerundete Ecken
+  - Platziere es so, dass es den Content ergänzt, nicht verdeckt
+- Photographer Credit: ${img.photographer}`
+    }
+  }
+
   const user = `Erstelle das Layout für Slide ${slideIndex + 1} von ${totalSlides}.
 
 SLIDE-TYP: ${slideContent.type} (${slideTypeDescription[slideContent.type]})
 
 CONTENT:
 ${contentJson}
+${imageInstructions}
 
-Generiere ein vollständiges Slide-Objekt mit backgroundColor und elements Array.`
+Generiere ein vollständiges Slide-Objekt mit backgroundColor${imageData?.imageType === 'background' ? ', backgroundImage' : ''} und elements Array.`
 
   return { system, user }
 }

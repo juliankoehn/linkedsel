@@ -146,6 +146,7 @@ export async function POST(request: NextRequest) {
             brandKit: body.brandKit,
             canvasWidth: body.canvasWidth,
             canvasHeight: body.canvasHeight,
+            useImages: body.useImages,
           },
           (event: PipelineEvent) => {
             // Forward pipeline events to SSE stream
