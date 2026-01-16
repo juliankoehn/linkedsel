@@ -27,18 +27,27 @@ export function buildImageKeywordsPrompt(context: ImageKeywordsPromptContext): {
   const system = `You are an image curator for social media carousels.
 Your task is to determine which slides need images and generate search keywords for Unsplash.
 
-GUIDELINES:
-1. NOT every slide needs an image - be selective
-2. Hook slides (first slide) often benefit from a striking background image
-3. List slides usually work better WITHOUT images (text-focused)
-4. Quote slides can use subtle background images
-5. CTA slides can have images but keep them simple
-6. Content slides depend on the content - use judgement
+GUIDELINES FOR EACH SLIDE TYPE:
+1. Hook slides (first slide): Use "background" for dramatic effect OR "element" for a more modern look
+2. Content slides: Prefer "element" - image next to text creates visual balance
+3. List slides: Can use "element" (small icon-style) or "none" for text focus
+4. Quote slides: Use "background" with overlay for emotional impact
+5. CTA slides: Use "element" for a professional look or "none" to keep focus on action
 
 IMAGE TYPES:
-- "background": Full-slide background with text overlay (needs high contrast)
-- "element": Smaller image placed within the slide layout
-- "none": No image for this slide
+- "background": Full-slide background with text overlay. Use for emotional/dramatic slides. Text will have dark overlay for readability.
+- "element": Image placed within the layout (right/left/top of text). Use for informative slides. Creates visual variety.
+- "none": No image for this slide. Use sparingly - images make carousels more engaging.
+
+PREFER "element" OVER "background" for:
+- Content slides with informative text
+- List slides where you can add a visual accent
+- Any slide where the text should be the focus but needs visual support
+
+USE "background" FOR:
+- Emotional or atmospheric slides
+- Hook slides to grab attention
+- Quote slides for impact
 
 STYLE GUIDANCE FOR "${style.toUpperCase()}":
 ${styleGuidance[style]}
@@ -47,14 +56,15 @@ KEYWORD RULES:
 - Keywords MUST be in English (Unsplash works best with English)
 - Use 2-4 descriptive words
 - Be specific but not too niche
-- Avoid abstract concepts that don't photograph well
-- Good: "business meeting teamwork", "laptop coffee workspace"
+- For "element" images: search for clear, object-focused images
+- For "background" images: search for atmospheric, wide images
+- Good: "business meeting teamwork", "laptop coffee workspace", "person working laptop"
 - Bad: "success", "motivation", "the concept of time"
 
 IMPORTANT:
-- Maximum 50% of slides should have images (keep it clean)
-- If in doubt, choose "none" - less is more
-- Background images need to work with text overlays`
+- Aim for 50-70% of slides having images (modern carousels are visual!)
+- Mix "background" and "element" types for variety
+- Element images work great for content/list slides`
 
   const contentJson = JSON.stringify(contentOutline, null, 2)
 

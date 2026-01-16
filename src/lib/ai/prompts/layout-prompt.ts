@@ -303,11 +303,42 @@ ELEMENT-TYPEN (alle Felder müssen gesetzt sein, nicht benötigte als null):
 - "circle": x (Zentrum), y (Zentrum), radius, fill, opacity (+ null für: text, width, height, fontSize, fontWeight, color, textAlign, cornerRadius, src, objectFit)
 - "image": src, x, y, width, height, objectFit, opacity, cornerRadius (+ null für: text, fontSize, fontWeight, color, textAlign, radius, fill)
 
+DEKORATIVE ELEMENTE (für visuelles Interesse):
+Füge 2-4 dekorative Elemente pro Slide hinzu:
+
+1. AKZENT-LINIEN unter Headlines:
+   - rectangle mit height: 4-6px, width: 60-120px
+   - Nutze Primary oder Accent Color
+   - Platziere UNTER der Headline (nicht darüber!)
+
+2. GEOMETRISCHE FORMEN als Hintergrund-Akzente:
+   - Große Kreise (radius: ${Math.round(canvasWidth * 0.15)}-${Math.round(canvasWidth * 0.25)}px) in Ecken
+   - opacity: 0.1-0.3 für subtilen Effekt
+   - Nutze Primary/Secondary Color
+   - Können teilweise außerhalb des Canvas sein
+
+3. FARBIGE HIGHLIGHT-BOXEN:
+   - Für wichtige Begriffe oder Zahlen
+   - rectangle hinter Text mit opacity: 0.15-0.25
+   - cornerRadius: 8-16px
+
+4. TRENNLINIEN zwischen Abschnitten:
+   - rectangle mit height: 1-2px
+   - opacity: 0.3, width: 40-60% der Canvas-Breite
+   - Zentriert
+
+BEISPIELE für Dekorationen:
+- Hook Slide: Große Kreise in Ecken + Akzent-Linie unter Headline
+- List Slide: Farbige Bullets oder Nummern + Trennlinien zwischen Items
+- Quote Slide: Großes ❝ Symbol + vertikale Linie am linken Rand
+- CTA Slide: Button-artige Box um CTA-Text + dekorative Kreise
+
 WICHTIG:
 - Alle Positionen sind ABSOLUTE Pixel-Werte
 - Hook/CTA Slides: Text vertikal zentrieren (y ca. ${Math.round(canvasHeight * 0.35)} für Headline)
 - List Slides: Headline oben (y ca. ${Math.round(canvasHeight * 0.08)}), dann Liste ab ${Math.round(canvasHeight * 0.22)}
 - Kontrastreiche Farben für Text auf Background
+- Dekorative Elemente IMMER HINTER Text (zuerst im elements Array)
 
 ${layoutExamples}`
 
@@ -339,12 +370,15 @@ BILD VERFÜGBAR (als Hintergrund verwenden):
       imageInstructions = `
 BILD VERFÜGBAR (als Element platzieren):
 - URL: ${img.url}
-- Füge ein "image" Element hinzu:
-  - src: "${img.url}"
-  - Empfohlene Größe: ${Math.round(canvasWidth * 0.4)}x${Math.round(canvasWidth * 0.4)}px
-  - objectFit: "cover"
-  - cornerRadius: 8-16 für abgerundete Ecken
-  - Platziere es so, dass es den Content ergänzt, nicht verdeckt
+- WICHTIG: Füge ein "image" Element hinzu!
+- Empfohlene Platzierungen:
+  A) RECHTS neben Text: x: ${Math.round(canvasWidth * 0.55)}, y: ${Math.round(canvasHeight * 0.15)}, width/height: ${Math.round(canvasWidth * 0.38)}px
+  B) LINKS neben Text: x: ${padding}, y: ${Math.round(canvasHeight * 0.15)}, width/height: ${Math.round(canvasWidth * 0.38)}px (Text dann rechts)
+  C) OBEN zentriert: x: ${Math.round(canvasWidth * 0.25)}, y: ${padding}, width/height: ${Math.round(canvasWidth * 0.5)}px
+- objectFit: "cover"
+- cornerRadius: ${Math.round(canvasWidth * 0.02)}px für abgerundete Ecken
+- opacity: 1 (volle Sichtbarkeit)
+- Passe Text-Layout an, damit Bild und Text harmonisch zusammenwirken
 - Photographer Credit: ${img.photographer}`
     }
   }

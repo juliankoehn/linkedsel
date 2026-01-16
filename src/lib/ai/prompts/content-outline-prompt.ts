@@ -37,34 +37,34 @@ BEISPIEL 1 - Thema: "5 Tipps für besseres Zeitmanagement"
   "slides": [
     {
       "type": "hook",
-      "headline": "Arbeitest du hart oder smart?",
+      "headline": "⏰ Arbeitest du hart oder smart?",
       "subheadline": "5 Zeitmanagement-Strategien, die alles verändern"
     },
     {
       "type": "content",
-      "headline": "1. Die 2-Minuten-Regel",
+      "headline": "1. Die 2-Minuten-Regel ⚡",
       "body": "Wenn eine Aufgabe weniger als 2 Minuten dauert, erledige sie sofort. Kein Aufschieben, kein Notieren."
     },
     {
       "type": "list",
-      "headline": "2. Priorisiere mit der Eisenhower-Matrix",
+      "headline": "2. Priorisiere mit der Eisenhower-Matrix 📊",
       "bullets": [
-        "Wichtig + Dringend → Sofort erledigen",
-        "Wichtig + Nicht dringend → Planen",
-        "Nicht wichtig + Dringend → Delegieren",
-        "Nicht wichtig + Nicht dringend → Streichen"
+        "🔴 Wichtig + Dringend → Sofort erledigen",
+        "🟡 Wichtig + Nicht dringend → Planen",
+        "🟠 Nicht wichtig + Dringend → Delegieren",
+        "⚪ Nicht wichtig + Nicht dringend → Streichen"
       ]
     },
     {
       "type": "content",
-      "headline": "3. Time-Blocking",
+      "headline": "3. Time-Blocking 📅",
       "body": "Reserviere feste Zeitblöcke für ähnliche Aufgaben. Multitasking ist ein Mythos - Fokus ist der Schlüssel."
     },
     {
       "type": "cta",
-      "headline": "Bereit für mehr Produktivität?",
+      "headline": "🚀 Bereit für mehr Produktivität?",
       "body": "Starte heute mit nur einer dieser Strategien.",
-      "cta": "Folge für mehr Tipps"
+      "cta": "Folge für mehr Tipps →"
     }
   ]
 }
@@ -75,35 +75,35 @@ BEISPIEL 2 - Thema: "Warum emotionale Intelligenz wichtiger ist als IQ"
   "slides": [
     {
       "type": "hook",
-      "headline": "Die erfolgreichsten Menschen haben etwas gemeinsam",
+      "headline": "🧠 Die erfolgreichsten Menschen haben etwas gemeinsam",
       "subheadline": "Und es ist nicht ihr IQ"
     },
     {
       "type": "quote",
-      "headline": "Was die Forschung sagt",
+      "headline": "📈 Was die Forschung sagt",
       "quote": "90% der Top-Performer haben eine überdurchschnittliche emotionale Intelligenz.",
       "attribution": "TalentSmart Studie"
     },
     {
       "type": "list",
-      "headline": "Die 4 Säulen der EQ",
+      "headline": "Die 4 Säulen der EQ 💡",
       "bullets": [
-        "Selbstwahrnehmung - Eigene Emotionen erkennen",
-        "Selbstregulation - Impulse kontrollieren",
-        "Empathie - Andere verstehen",
-        "Soziale Kompetenz - Beziehungen pflegen"
+        "🔍 Selbstwahrnehmung - Eigene Emotionen erkennen",
+        "🎯 Selbstregulation - Impulse kontrollieren",
+        "💚 Empathie - Andere verstehen",
+        "🤝 Soziale Kompetenz - Beziehungen pflegen"
       ]
     },
     {
       "type": "content",
-      "headline": "Die gute Nachricht",
+      "headline": "✨ Die gute Nachricht",
       "body": "Anders als IQ ist emotionale Intelligenz trainierbar. Jeden Tag ein bisschen besser."
     },
     {
       "type": "cta",
-      "headline": "Starte heute",
+      "headline": "🎯 Starte heute",
       "body": "Der erste Schritt: Achte auf deine Reaktionen.",
-      "cta": "Speichern & Teilen"
+      "cta": "Speichern & Teilen 💾"
     }
   ]
 }`,
@@ -114,34 +114,34 @@ EXAMPLE 1 - Topic: "5 Tips for Better Time Management"
   "slides": [
     {
       "type": "hook",
-      "headline": "Are you working hard or smart?",
+      "headline": "⏰ Are you working hard or smart?",
       "subheadline": "5 time management strategies that change everything"
     },
     {
       "type": "content",
-      "headline": "1. The 2-Minute Rule",
+      "headline": "1. The 2-Minute Rule ⚡",
       "body": "If a task takes less than 2 minutes, do it immediately. No postponing, no noting down."
     },
     {
       "type": "list",
-      "headline": "2. Prioritize with Eisenhower Matrix",
+      "headline": "2. Prioritize with Eisenhower Matrix 📊",
       "bullets": [
-        "Important + Urgent → Do immediately",
-        "Important + Not urgent → Schedule",
-        "Not important + Urgent → Delegate",
-        "Not important + Not urgent → Delete"
+        "🔴 Important + Urgent → Do immediately",
+        "🟡 Important + Not urgent → Schedule",
+        "🟠 Not important + Urgent → Delegate",
+        "⚪ Not important + Not urgent → Delete"
       ]
     },
     {
       "type": "content",
-      "headline": "3. Time-Blocking",
+      "headline": "3. Time-Blocking 📅",
       "body": "Reserve fixed time blocks for similar tasks. Multitasking is a myth - focus is the key."
     },
     {
       "type": "cta",
-      "headline": "Ready for more productivity?",
+      "headline": "🚀 Ready for more productivity?",
       "body": "Start today with just one of these strategies.",
-      "cta": "Follow for more tips"
+      "cta": "Follow for more tips →"
     }
   ]
 }
@@ -152,35 +152,35 @@ EXAMPLE 2 - Topic: "Why Emotional Intelligence Matters More Than IQ"
   "slides": [
     {
       "type": "hook",
-      "headline": "The most successful people have something in common",
+      "headline": "🧠 The most successful people have something in common",
       "subheadline": "And it's not their IQ"
     },
     {
       "type": "quote",
-      "headline": "What Research Says",
+      "headline": "📈 What Research Says",
       "quote": "90% of top performers have above-average emotional intelligence.",
       "attribution": "TalentSmart Study"
     },
     {
       "type": "list",
-      "headline": "The 4 Pillars of EQ",
+      "headline": "The 4 Pillars of EQ 💡",
       "bullets": [
-        "Self-awareness - Recognize your emotions",
-        "Self-regulation - Control impulses",
-        "Empathy - Understand others",
-        "Social skills - Build relationships"
+        "🔍 Self-awareness - Recognize your emotions",
+        "🎯 Self-regulation - Control impulses",
+        "💚 Empathy - Understand others",
+        "🤝 Social skills - Build relationships"
       ]
     },
     {
       "type": "content",
-      "headline": "The Good News",
+      "headline": "✨ The Good News",
       "body": "Unlike IQ, emotional intelligence is trainable. A little better every day."
     },
     {
       "type": "cta",
-      "headline": "Start Today",
+      "headline": "🎯 Start Today",
       "body": "First step: Pay attention to your reactions.",
-      "cta": "Save & Share"
+      "cta": "Save & Share 💾"
     }
   ]
 }`,
@@ -213,6 +213,7 @@ REGELN:
 4. Headlines sollten KURZ und PRÄGNANT sein (max 10 Worte)
 5. Body-Text sollte VERSTÄNDLICH und KONKRET sein
 6. Bei Listen: 3-5 Punkte, jeder Punkt kurz und scanbar
+7. EMOJIS: Nutze passende Emojis in Headlines und Bullets für visuelle Akzente (1-2 pro Slide)
 
 ${fewShotExamples.de}`
       : `You are an experienced content strategist for social media carousels.
@@ -234,6 +235,7 @@ RULES:
 4. Headlines should be SHORT and CONCISE (max 10 words)
 5. Body text should be UNDERSTANDABLE and CONCRETE
 6. For lists: 3-5 points, each point short and scannable
+7. EMOJIS: Use relevant emojis in headlines and bullets for visual accents (1-2 per slide)
 
 ${fewShotExamples.en}`
 
