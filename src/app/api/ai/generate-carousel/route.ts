@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
 import OpenAI from 'openai'
 
-import { canvasTools, type ToolName } from '@/lib/ai/canvas-tools'
+import { type CarouselData, carouselJsonSchema } from '@/lib/ai/carousel-schema'
 import type { CarouselGenerationRequest, StreamEvent } from '@/lib/ai/streaming-types'
 import { decryptApiKey } from '@/lib/encryption'
 import { createClient } from '@/lib/supabase/server'
@@ -89,14 +89,11 @@ DESIGN GUIDELINES:
 - The first slide should be a hook that grabs attention
 - The last slide should have a call-to-action
 
-WORKFLOW - YOU MUST FOLLOW THESE STEPS FOR EACH SLIDE:
-1. ALWAYS call create_slide first with a background color
-2. ALWAYS call add_text for the headline (large text at top)
-3. ALWAYS call add_text for the body text (smaller text below headline)
-4. Optionally add shapes with add_rectangle or add_circle for visual interest
-5. ALWAYS call complete_slide when done with a slide
-
-CRITICAL: Every slide MUST have at least a headline and body text. Do not create empty slides.
+CRITICAL REQUIREMENTS:
+- Every slide MUST have at least 2 text elements: a headline (large) and body text (smaller)
+- Use contrasting colors for text on background (e.g., dark text on light background)
+- Position elements with proper spacing - don't overlap text elements
+- Text width should be at most canvasWidth - 120px (for padding)
 
 Create exactly the number of slides requested. Make each slide visually distinct but cohesive as a series.`
 }
@@ -179,160 +176,90 @@ export async function POST(request: NextRequest) {
     // Start async processing
     ;(async () => {
       try {
+        const totalSlideCount = Math.min(slideCount, 10)
+
         // Send start event
         send({
           type: 'start',
-          data: { totalSlides: Math.min(slideCount, 10) },
+          data: { totalSlides: totalSlideCount },
+        })
+
+        send({
+          type: 'progress',
+          data: {
+            message: 'Generating carousel content...',
+            slideIndex: 0,
+            totalSlides: totalSlideCount,
+          },
         })
 
         const systemPrompt = buildSystemPrompt(body)
-        const userPrompt = `Create a ${Math.min(slideCount, 10)}-slide carousel about: "${topic}"`
+        const userPrompt = `Create a ${totalSlideCount}-slide carousel about: "${topic}"`
 
-        // Create OpenAI stream with function calling
+        // Create OpenAI request with Structured Output
         const response = await openai.chat.completions.create({
           model: 'gpt-4o-mini',
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
           ],
-          tools: canvasTools,
-          tool_choice: 'auto',
-          stream: false, // We'll use non-streaming for reliable tool calls
+          response_format: {
+            type: 'json_schema',
+            json_schema: carouselJsonSchema,
+          },
         })
 
         const message = response.choices[0]?.message
-        if (!message) {
+        if (!message?.content) {
           throw new Error('No response from AI')
         }
 
-        // Process tool calls
-        const toolCalls = message.tool_calls || []
-        let currentSlideIndex = 0
-        let slidesCompleted = 0
+        // Parse the structured response
+        const carouselData: CarouselData = JSON.parse(message.content)
 
-        for (const toolCall of toolCalls) {
-          // Skip non-function tool calls
-          if (toolCall.type !== 'function') continue
-
-          const toolName = toolCall.function.name as ToolName
-          const args = JSON.parse(toolCall.function.arguments)
-
-          // Send tool call event
-          send({
-            type: 'tool_call',
-            data: { tool: toolName, args },
-          })
-
-          // Track slide progress
-          if (toolName === 'create_slide') {
-            currentSlideIndex++
-            send({
-              type: 'progress',
-              data: {
-                message: `Creating slide ${currentSlideIndex}...`,
-                slideIndex: currentSlideIndex,
-                totalSlides: Math.min(slideCount, 10),
-              },
-            })
-          } else if (toolName === 'complete_slide') {
-            slidesCompleted++
-            send({
-              type: 'slide_complete',
-              data: {
-                slideIndex: slidesCompleted,
-                totalSlides: Math.min(slideCount, 10),
-              },
-            })
-          }
-
-          // Small delay between tool calls for visual effect
-          await new Promise((resolve) => setTimeout(resolve, 100))
+        if (!carouselData.slides || carouselData.slides.length === 0) {
+          throw new Error('AI generated no slides')
         }
 
-        // If no tool calls were made or slides incomplete, generate with simpler approach
-        if (slidesCompleted === 0) {
-          // Fallback: Generate slide-by-slide with separate calls
-          for (let i = 0; i < Math.min(slideCount, 10); i++) {
-            send({
-              type: 'progress',
-              data: {
-                message: `Creating slide ${i + 1}...`,
-                slideIndex: i + 1,
-                totalSlides: Math.min(slideCount, 10),
-              },
-            })
+        // Stream each slide to the client
+        for (let i = 0; i < carouselData.slides.length; i++) {
+          const slide = carouselData.slides[i]
+          if (!slide) continue
 
-            const slideResponse = await openai.chat.completions.create({
-              model: 'gpt-4o-mini',
-              messages: [
-                { role: 'system', content: systemPrompt },
-                {
-                  role: 'user',
-                  content: `Create slide ${i + 1} of ${Math.min(slideCount, 10)} for a carousel about: "${topic}". ${i === 0 ? 'This is the hook slide - make it attention-grabbing.' : ''} ${i === Math.min(slideCount, 10) - 1 ? 'This is the final slide - include a call-to-action.' : ''}`,
-                },
-              ],
-              tools: canvasTools,
-              tool_choice: 'required',
-            })
+          send({
+            type: 'progress',
+            data: {
+              message: `Creating slide ${i + 1}...`,
+              slideIndex: i + 1,
+              totalSlides: carouselData.slides.length,
+            },
+          })
 
-            const slideMessage = slideResponse.choices[0]?.message
-            const slideToolCalls = slideMessage?.tool_calls || []
+          // Send slide data
+          send({
+            type: 'slide_data',
+            data: {
+              slideIndex: i,
+              slide,
+            },
+          })
 
-            // Ensure create_slide is called first
-            const hasCreateSlide = slideToolCalls.some(
-              (tc) => tc.type === 'function' && tc.function.name === 'create_slide'
-            )
-            if (!hasCreateSlide) {
-              // Send default create_slide with white background
-              send({
-                type: 'tool_call',
-                data: { tool: 'create_slide', args: { backgroundColor: '#ffffff' } },
-              })
-              await new Promise((resolve) => setTimeout(resolve, 50))
-            }
+          // Small delay for visual effect
+          await new Promise((resolve) => setTimeout(resolve, 150))
 
-            for (const toolCall of slideToolCalls) {
-              // Skip non-function tool calls
-              if (toolCall.type !== 'function') continue
-
-              const toolName = toolCall.function.name as ToolName
-              const args = JSON.parse(toolCall.function.arguments)
-
-              send({
-                type: 'tool_call',
-                data: { tool: toolName, args },
-              })
-
-              await new Promise((resolve) => setTimeout(resolve, 50))
-            }
-
-            // Ensure complete_slide is called
-            const hasCompleteSlide = slideToolCalls.some(
-              (tc) => tc.type === 'function' && tc.function.name === 'complete_slide'
-            )
-            if (!hasCompleteSlide) {
-              send({
-                type: 'tool_call',
-                data: { tool: 'complete_slide', args: {} },
-              })
-            }
-
-            send({
-              type: 'slide_complete',
-              data: {
-                slideIndex: i + 1,
-                totalSlides: Math.min(slideCount, 10),
-              },
-            })
-          }
-
-          slidesCompleted = Math.min(slideCount, 10)
+          send({
+            type: 'slide_complete',
+            data: {
+              slideIndex: i + 1,
+              totalSlides: carouselData.slides.length,
+            },
+          })
         }
 
         // Send done event
         send({
           type: 'done',
-          data: { slidesCreated: slidesCompleted },
+          data: { slidesCreated: carouselData.slides.length },
         })
       } catch (error) {
         console.error('AI generation error:', error)

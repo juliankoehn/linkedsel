@@ -4,7 +4,7 @@
 
 import type { BrandKit } from '@/types/brand-kit'
 
-import type { ToolArgs, ToolName } from './canvas-tools'
+import type { SlideData } from './carousel-schema'
 
 // Request types
 export interface CarouselGenerationRequest {
@@ -28,7 +28,7 @@ export interface ExistingSlideContext {
 // SSE Event types
 export type StreamEventType =
   | 'start'
-  | 'tool_call'
+  | 'slide_data'
   | 'slide_complete'
   | 'progress'
   | 'error'
@@ -41,7 +41,7 @@ export interface StreamEvent {
 
 export type StreamEventData =
   | StartEventData
-  | ToolCallEventData
+  | SlideDataEventData
   | SlideCompleteEventData
   | ProgressEventData
   | ErrorEventData
@@ -51,9 +51,9 @@ export interface StartEventData {
   totalSlides: number
 }
 
-export interface ToolCallEventData {
-  tool: ToolName
-  args: ToolArgs
+export interface SlideDataEventData {
+  slideIndex: number
+  slide: SlideData
 }
 
 export interface SlideCompleteEventData {
@@ -73,16 +73,4 @@ export interface ErrorEventData {
 
 export interface DoneEventData {
   slidesCreated: number
-}
-
-// Pending slide state (client-side)
-export interface PendingSlide {
-  backgroundColor: string
-  elements: PendingElement[]
-}
-
-export interface PendingElement {
-  type: 'text' | 'rect' | 'circle'
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  props: any
 }

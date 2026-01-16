@@ -3,23 +3,16 @@
 import { nanoid } from 'nanoid'
 import { useCallback, useRef, useState } from 'react'
 
-import type {
-  AddCircleArgs,
-  AddRectangleArgs,
-  AddTextArgs,
-  CreateSlideArgs,
-  ToolName,
-} from '@/lib/ai/canvas-tools'
+import type { ElementData, SlideData } from '@/lib/ai/carousel-schema'
 import type {
   CarouselGenerationRequest,
   DoneEventData,
   ErrorEventData,
-  PendingSlide,
   ProgressEventData,
   SlideCompleteEventData,
+  SlideDataEventData,
   StartEventData,
   StreamEvent,
-  ToolCallEventData,
 } from '@/lib/ai/streaming-types'
 import { useCanvasStore } from '@/stores/canvas-store'
 import { useHistoryStore } from '@/stores/history-store'
@@ -60,114 +53,61 @@ export function useAIGeneration() {
   })
 
   const abortControllerRef = useRef<AbortController | null>(null)
-  const pendingSlideRef = useRef<PendingSlide | null>(null)
 
   const { slides, setSlides } = useSlidesStore()
   const { getDimensions } = useCanvasStore()
   const { pushState } = useHistoryStore()
   const { markDirty } = useProjectStore()
 
-  const convertPendingToSlide = useCallback((pending: PendingSlide): Slide => {
-    const elements: CanvasElement[] = pending.elements.map((el) => {
+  // Convert AI-generated slide data to our Slide format
+  const convertSlideDataToSlide = useCallback((slideData: SlideData): Slide => {
+    const elements: CanvasElement[] = slideData.elements.map((el: ElementData) => {
       switch (el.type) {
-        case 'text': {
-          const props = el.props as unknown as AddTextArgs
+        case 'text':
           return createTextElement({
             id: nanoid(),
-            text: props.text,
-            x: props.x,
-            y: props.y,
-            width: props.width || 400,
-            height: 100,
-            fontSize: props.fontSize,
-            fontWeight: props.fontWeight || 'normal',
-            fontFamily: props.fontFamily || 'Inter',
-            fill: props.color,
-            textAlign: props.textAlign || 'left',
+            text: el.text,
+            x: el.x,
+            y: el.y,
+            width: el.width,
+            height: 100, // Will auto-adjust
+            fontSize: el.fontSize,
+            fontWeight: el.fontWeight || 'normal',
+            fontFamily: 'Inter',
+            fill: el.color,
+            textAlign: el.textAlign || 'left',
           })
-        }
-        case 'rect': {
-          const props = el.props as unknown as AddRectangleArgs
+        case 'rectangle':
           return createRectElement({
             id: nanoid(),
-            x: props.x,
-            y: props.y,
-            width: props.width,
-            height: props.height,
-            fill: props.fill,
-            cornerRadius: props.cornerRadius || 0,
-            opacity: props.opacity ?? 1,
+            x: el.x,
+            y: el.y,
+            width: el.width,
+            height: el.height,
+            fill: el.fill,
+            cornerRadius: el.cornerRadius || 0,
+            opacity: el.opacity ?? 1,
           })
-        }
-        case 'circle': {
-          const props = el.props as unknown as AddCircleArgs
+        case 'circle':
           return createCircleElement({
             id: nanoid(),
-            x: props.x,
-            y: props.y,
-            width: props.radius * 2,
-            height: props.radius * 2,
-            radius: props.radius,
-            fill: props.fill,
-            opacity: props.opacity ?? 1,
+            x: el.x - el.radius, // Center to top-left
+            y: el.y - el.radius,
+            width: el.radius * 2,
+            height: el.radius * 2,
+            radius: el.radius,
+            fill: el.fill,
+            opacity: el.opacity ?? 1,
           })
-        }
         default:
-          throw new Error(`Unknown element type: ${el.type}`)
+          throw new Error(`Unknown element type`)
       }
     })
 
     return {
       id: nanoid(),
-      backgroundColor: pending.backgroundColor,
+      backgroundColor: slideData.backgroundColor,
       elements,
-    }
-  }, [])
-
-  const processToolCall = useCallback((tool: ToolName, args: unknown) => {
-    switch (tool) {
-      case 'create_slide': {
-        const { backgroundColor } = args as CreateSlideArgs
-        pendingSlideRef.current = {
-          backgroundColor,
-          elements: [],
-        }
-        break
-      }
-      case 'add_text': {
-        if (pendingSlideRef.current) {
-          const textArgs = args as AddTextArgs
-          pendingSlideRef.current.elements.push({
-            type: 'text',
-            props: textArgs,
-          })
-        }
-        break
-      }
-      case 'add_rectangle': {
-        if (pendingSlideRef.current) {
-          const rectArgs = args as AddRectangleArgs
-          pendingSlideRef.current.elements.push({
-            type: 'rect',
-            props: rectArgs,
-          })
-        }
-        break
-      }
-      case 'add_circle': {
-        if (pendingSlideRef.current) {
-          const circleArgs = args as AddCircleArgs
-          pendingSlideRef.current.elements.push({
-            type: 'circle',
-            props: circleArgs,
-          })
-        }
-        break
-      }
-      case 'complete_slide': {
-        // Slide completion is handled in the stream processing
-        break
-      }
     }
   }, [])
 
@@ -185,7 +125,6 @@ export function useAIGeneration() {
         error: null,
       })
 
-      pendingSlideRef.current = null
       abortControllerRef.current = new AbortController()
 
       const { width, height } = getDimensions()
@@ -271,29 +210,24 @@ export function useAIGeneration() {
                     break
                   }
 
-                  case 'tool_call': {
-                    const data = event.data as ToolCallEventData
-                    processToolCall(data.tool, data.args)
+                  case 'slide_data': {
+                    const data = event.data as SlideDataEventData
+                    const newSlide = convertSlideDataToSlide(data.slide)
+                    completedSlides.push(newSlide)
+
+                    // Replace slides with generated ones (don't append)
+                    setSlides([...completedSlides])
+                    markDirty()
                     break
                   }
 
                   case 'slide_complete': {
                     const data = event.data as SlideCompleteEventData
-                    if (pendingSlideRef.current) {
-                      const newSlide = convertPendingToSlide(pendingSlideRef.current)
-                      completedSlides.push(newSlide)
-                      pendingSlideRef.current = null
-
-                      // Replace slides with generated ones (don't append)
-                      setSlides(completedSlides)
-                      markDirty()
-
-                      setState((prev) => ({
-                        ...prev,
-                        currentSlide: data.slideIndex,
-                        message: `Slide ${data.slideIndex} of ${data.totalSlides} complete`,
-                      }))
-                    }
+                    setState((prev) => ({
+                      ...prev,
+                      currentSlide: data.slideIndex,
+                      message: `Slide ${data.slideIndex} of ${data.totalSlides} complete`,
+                    }))
                     break
                   }
 
@@ -339,7 +273,7 @@ export function useAIGeneration() {
         }
       }
     },
-    [slides, getDimensions, pushState, processToolCall, convertPendingToSlide, setSlides, markDirty]
+    [slides, getDimensions, pushState, convertSlideDataToSlide, setSlides, markDirty]
   )
 
   const cancel = useCallback(() => {
@@ -347,7 +281,6 @@ export function useAIGeneration() {
       abortControllerRef.current.abort()
       abortControllerRef.current = null
     }
-    pendingSlideRef.current = null
     setState((prev) => ({
       ...prev,
       isGenerating: false,
