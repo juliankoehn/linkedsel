@@ -33,7 +33,6 @@ function generateLayoutExamples(canvasWidth: number, canvasHeight: number): stri
   const hookHeadlineY = Math.round(canvasHeight * 0.35) // 35% from top
   const hookSublineY = Math.round(canvasHeight * 0.48) // 48% from top
   const topHeadlineY = Math.round(canvasHeight * 0.08) // 8% from top
-  const listStartY = Math.round(canvasHeight * 0.22) // 22% from top
   const listItemGap = Math.round(canvasHeight * 0.08) // 8% gap between items
 
   return `
@@ -75,7 +74,10 @@ Canvas: ${canvasWidth}x${canvasHeight}
   ]
 }
 
-BEISPIEL 2 - List Slide (Headline oben, Liste darunter):
+BEISPIEL 2 - List Slide (Headline oben, Linie UNTER Headline, dann Liste):
+// Headline bei y=${topHeadlineY}, fontSize=${headlineFontSize}
+// Headline-Höhe: ${headlineFontSize} × 1.4 = ${Math.round(headlineFontSize * 1.4)}px
+// Linie muss bei: ${topHeadlineY} + ${Math.round(headlineFontSize * 1.4)} + Abstand = ${topHeadlineY + Math.round(headlineFontSize * 1.4) + Math.round(canvasHeight * 0.015)}
 {
   "backgroundColor": "#FFFFFF",
   "elements": [
@@ -93,7 +95,7 @@ BEISPIEL 2 - List Slide (Headline oben, Liste darunter):
     {
       "type": "rectangle",
       "x": ${padding},
-      "y": ${Math.round(canvasHeight * 0.16)},
+      "y": ${topHeadlineY + Math.round(headlineFontSize * 1.4) + Math.round(canvasHeight * 0.015)},
       "width": ${Math.round(canvasWidth * 0.1)},
       "height": 4,
       "fill": "#1E40AF",
@@ -104,7 +106,7 @@ BEISPIEL 2 - List Slide (Headline oben, Liste darunter):
       "type": "text",
       "text": "• Selbstwahrnehmung - Eigene Emotionen erkennen",
       "x": ${padding},
-      "y": ${listStartY},
+      "y": ${topHeadlineY + Math.round(headlineFontSize * 1.4) + Math.round(canvasHeight * 0.06)},
       "width": ${contentWidth},
       "fontSize": ${bodyFontSize},
       "fontWeight": "normal",
@@ -115,7 +117,7 @@ BEISPIEL 2 - List Slide (Headline oben, Liste darunter):
       "type": "text",
       "text": "• Selbstregulation - Impulse kontrollieren",
       "x": ${padding},
-      "y": ${listStartY + listItemGap},
+      "y": ${topHeadlineY + Math.round(headlineFontSize * 1.4) + Math.round(canvasHeight * 0.06) + listItemGap},
       "width": ${contentWidth},
       "fontSize": ${bodyFontSize},
       "fontWeight": "normal",
@@ -126,7 +128,7 @@ BEISPIEL 2 - List Slide (Headline oben, Liste darunter):
       "type": "text",
       "text": "• Empathie - Andere verstehen",
       "x": ${padding},
-      "y": ${listStartY + listItemGap * 2},
+      "y": ${topHeadlineY + Math.round(headlineFontSize * 1.4) + Math.round(canvasHeight * 0.06) + listItemGap * 2},
       "width": ${contentWidth},
       "fontSize": ${bodyFontSize},
       "fontWeight": "normal",
@@ -137,7 +139,7 @@ BEISPIEL 2 - List Slide (Headline oben, Liste darunter):
       "type": "text",
       "text": "• Soziale Kompetenz - Beziehungen pflegen",
       "x": ${padding},
-      "y": ${listStartY + listItemGap * 3},
+      "y": ${topHeadlineY + Math.round(headlineFontSize * 1.4) + Math.round(canvasHeight * 0.06) + listItemGap * 3},
       "width": ${contentWidth},
       "fontSize": ${bodyFontSize},
       "fontWeight": "normal",
@@ -278,6 +280,12 @@ LAYOUT-REGELN:
 5. Font-Größen skaliert zur Canvas-Größe verwenden (siehe Beispiele)
 6. Bei Listen: Jeden Bullet als separates Text-Element mit • Prefix
 7. Vertikaler Abstand zwischen Elementen: mindestens ${Math.round(canvasHeight * 0.04)}px
+
+TEXTHÖHEN-BERECHNUNG (WICHTIG!):
+- Text-Elemente haben eine Höhe basierend auf fontSize × 1.4 (line-height)
+- Mehrzeilige Headlines: fontSize × 1.4 × Anzahl Zeilen
+- Eine Headline mit fontSize ${recommendedHeadline}px hat ca. ${Math.round(recommendedHeadline * 1.4)}px Höhe pro Zeile
+- Dekorative Linien MÜSSEN UNTER dem Text platziert werden: y = textY + (fontSize × 1.4 × zeilen) + ${Math.round(canvasHeight * 0.02)}px Abstand
 
 ELEMENT-TYPEN (alle Felder müssen gesetzt sein, nicht benötigte als null):
 - "text": text, x, y, width, fontSize, fontWeight, color, textAlign (+ null für: height, fill, cornerRadius, radius, opacity)
