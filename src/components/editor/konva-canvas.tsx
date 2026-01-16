@@ -4,7 +4,8 @@ import type Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import { ChevronLeft, ChevronRight, Copy, Minus, Plus, Square, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Layer, Rect, Stage } from 'react-konva'
+import { Image as KonvaImage, Layer, Rect, Stage } from 'react-konva'
+import { useImage } from 'react-konva-utils'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -21,7 +22,7 @@ import { DISPLAY_SCALE_FACTOR, useCanvasStore } from '@/stores/canvas-store'
 import { useHistoryStore } from '@/stores/history-store'
 import { useProjectStore } from '@/stores/project-store'
 import { useSelectionStore } from '@/stores/selection-store'
-import { useSlidesStore } from '@/stores/slides-store'
+import { type SlideBackgroundImage, useSlidesStore } from '@/stores/slides-store'
 
 import { ElementRenderer } from './konva-elements'
 import { SelectionRect } from './selection/selection-rect'
@@ -32,6 +33,41 @@ import { TextOverlay } from './text-editor/text-overlay'
 // Gap between slides
 const SLIDE_GAP = 60
 const TOOLBAR_HEIGHT = 40
+
+// Background image component for slides
+interface BackgroundImageProps {
+  backgroundImage: SlideBackgroundImage
+  width: number
+  height: number
+}
+
+function BackgroundImageLayer({ backgroundImage, width, height }: BackgroundImageProps) {
+  const [image, status] = useImage(backgroundImage.src, 'anonymous')
+
+  if (status !== 'loaded' || !image) {
+    return null
+  }
+
+  // Parse overlay color for the overlay rectangle
+  const overlayColor = backgroundImage.overlay || 'rgba(0,0,0,0)'
+
+  return (
+    <>
+      <KonvaImage
+        image={image}
+        x={0}
+        y={0}
+        width={width}
+        height={height}
+        opacity={backgroundImage.opacity ?? 1}
+        listening={false}
+      />
+      {backgroundImage.overlay && (
+        <Rect x={0} y={0} width={width} height={height} fill={overlayColor} listening={false} />
+      )}
+    </>
+  )
+}
 
 interface SlideToolbarProps {
   slideIndex: number
@@ -911,6 +947,13 @@ export function KonvaCanvas() {
                             fill={slide.backgroundColor || '#ffffff'}
                             listening={false}
                           />
+                          {slide.backgroundImage && (
+                            <BackgroundImageLayer
+                              backgroundImage={slide.backgroundImage}
+                              width={width}
+                              height={height}
+                            />
+                          )}
                         </Layer>
 
                         {/* Elements Layer */}

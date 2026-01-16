@@ -124,6 +124,13 @@ export function useAIGeneration() {
     return {
       id: nanoid(),
       backgroundColor: slideData.backgroundColor,
+      backgroundImage: slideData.backgroundImage
+        ? {
+            src: slideData.backgroundImage.src,
+            opacity: slideData.backgroundImage.opacity ?? 1,
+            overlay: slideData.backgroundImage.overlay ?? null,
+          }
+        : null,
       elements,
     }
   }, [])

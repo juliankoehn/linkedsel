@@ -198,9 +198,16 @@ export type CanvasElement =
   | GroupElement
   | FrameElement
 
+export interface SlideBackgroundImage {
+  src: string
+  opacity: number
+  overlay?: string | null
+}
+
 export interface Slide {
   id: string
   backgroundColor: string
+  backgroundImage?: SlideBackgroundImage | null
   elements: CanvasElement[]
 }
 
