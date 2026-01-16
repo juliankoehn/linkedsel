@@ -1,18 +1,20 @@
-# LinkedSel - LinkedIn Carousel Generator
+# Stacked - LinkedIn Carousel Generator
 
-A SaaS tool for creating professional LinkedIn carousels with AI support.
+Create viral LinkedIn carousels in seconds with AI. The fastest way from idea to finished post.
+
+Built by [Julian Koehn](https://julian.pro)
 
 ## Tech Stack
 
-- **Frontend:** Next.js 15, React 19, TypeScript, Tailwind CSS, shadcn/ui
-- **Canvas:** Fabric.js 6
+- **Frontend:** Next.js 16, React 19, TypeScript, Tailwind CSS 4, shadcn/ui
+- **Canvas:** Konva.js
 - **Backend:** Next.js API Routes, Supabase (Auth + DB + Storage)
 - **Payments:** LemonSqueezy
 - **AI:** OpenAI / Anthropic (BYOK or Pro plan)
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - pnpm
 - Supabase account (free tier available)
 - LemonSqueezy account (for payments)
@@ -57,6 +59,9 @@ ENCRYPTION_KEY=
 OPENAI_API_KEY=
 ANTHROPIC_API_KEY=
 
+# Unsplash (for AI-generated images)
+UNSPLASH_ACCESS_KEY=
+
 # App
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
@@ -82,23 +87,19 @@ supabase db reset
 #### Option B: Manual via Supabase Dashboard
 
 1. Go to SQL Editor
-2. Execute in order:
-   - `supabase/migrations/001_initial_schema.sql`
-   - `supabase/migrations/002_storage_buckets.sql`
-   - `supabase/migrations/003_add_lemon_customer_id.sql`
-   - `supabase/seed.sql`
+2. Execute migrations in order from `supabase/migrations/`
 
 ### 4. LemonSqueezy setup
 
 1. Create a store on [lemonsqueezy.com](https://lemonsqueezy.com)
-2. Create two products:
-   - **BYOK Plan** (e.g. $9/month) - Users bring their own API keys
-   - **Pro Plan** (e.g. $29/month) - Includes AI credits
+2. Create products:
+   - **Free Plan** - 3 AI credits/month
+   - **Pro Plan** ($19/month) - 100 AI credits/month
+   - **BYOK Plan** ($9/month) - Unlimited with own API keys
 3. Copy the variant IDs to `.env.local`
 4. Set up webhook:
    - URL: `https://your-domain.com/api/webhooks/lemonsqueezy`
    - Events: `subscription_created`, `subscription_updated`, `subscription_cancelled`, `subscription_payment_success`
-   - Add secret to `LEMONSQUEEZY_WEBHOOK_SECRET`
 
 ### 5. Generate encryption key
 
@@ -142,12 +143,12 @@ src/
 
 ## Features
 
+- **AI Carousel Generation** - Generate complete carousels from a topic
 - **Canvas Editor** - Drag & drop, text, shapes, images
-- **Templates** - 6 pre-built templates (4 free, 2 premium)
-- **AI Generation** - Generate content via AI (OpenAI/Anthropic)
-- **Brand Kits** - Save colors & fonts
-- **PDF Export** - High-resolution export (watermark for free users)
-- **Subscriptions** - BYOK and Pro plans via LemonSqueezy
+- **Templates** - Professional templates for every use case
+- **Brand Kits** - Save colors, fonts & logos
+- **PDF Export** - LinkedIn-ready PDF export
+- **Credit System** - Free tier with 3 credits, Pro with 100/month
 
 ## Scripts
 
@@ -165,19 +166,12 @@ pnpm db:migrate # Run Supabase migrations
 ### Vercel (recommended)
 
 1. Connect repo to Vercel
-2. Set environment variables:
-   - All vars from `.env.example`
-   - Add `SUPABASE_ACCESS_TOKEN` (from Supabase Dashboard > Account > Access Tokens)
-   - Add `SUPABASE_PROJECT_REF` (from your Supabase project URL)
-3. Deploy - migrations run automatically via `vercel.ts`
+2. Set environment variables from `.env.example`
+3. Deploy - migrations run automatically
 
-### Other platforms
+## Author
 
-```bash
-pnpm db:migrate  # Run migrations first
-pnpm build
-pnpm start
-```
+**Julian Koehn** - [julian.pro](https://julian.pro)
 
 ## License
 
