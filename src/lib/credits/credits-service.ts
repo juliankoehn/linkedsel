@@ -132,14 +132,17 @@ export async function getCreditTransactions(
   return data
 }
 
+// Free credits for new users to try AI features
+export const INITIAL_FREE_CREDITS = 3
+
 /**
  * Initialize credits for a user if they don't have a record yet
- * (Usually handled by database trigger, but can be called manually)
+ * New users get INITIAL_FREE_CREDITS as a welcome bonus
  */
 export async function initializeUserCredits(
   supabase: SupabaseClient<Database>,
   userId: string,
-  initialCredits: number = 0
+  initialCredits: number = INITIAL_FREE_CREDITS
 ): Promise<UserCredits> {
   const existing = await getUserCredits(supabase, userId)
   if (existing) {
