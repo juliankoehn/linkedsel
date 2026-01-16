@@ -4,6 +4,7 @@ import { nanoid } from 'nanoid'
 import { useCallback, useRef, useState } from 'react'
 
 import type { ElementData, SlideData } from '@/lib/ai/carousel-schema'
+import type { QualityTier } from '@/lib/ai/pipeline'
 import type {
   CarouselGenerationRequest,
   DoneEventData,
@@ -12,6 +13,8 @@ import type {
   SlideCompleteEventData,
   SlideDataEventData,
   StartEventData,
+  StepCompleteEventData,
+  StepStartEventData,
   StreamEvent,
 } from '@/lib/ai/streaming-types'
 import { useCanvasStore } from '@/stores/canvas-store'
@@ -31,6 +34,7 @@ export interface AIGenerationState {
   isGenerating: boolean
   currentSlide: number
   totalSlides: number
+  currentStep: string | null
   message: string
   error: string | null
 }
@@ -40,12 +44,14 @@ export interface AIGenerationOptions {
   style: 'professional' | 'casual' | 'educational' | 'inspirational'
   slideCount: number
   language: 'de' | 'en'
+  quality: QualityTier
   brandKit?: BrandKit | null
 }
 
 export function useAIGeneration() {
   const [state, setState] = useState<AIGenerationState>({
     isGenerating: false,
+    currentStep: null,
     currentSlide: 0,
     totalSlides: 0,
     message: '',
@@ -119,6 +125,7 @@ export function useAIGeneration() {
       // Reset state
       setState({
         isGenerating: true,
+        currentStep: null,
         currentSlide: 0,
         totalSlides: options.slideCount,
         message: 'Starting generation...',
@@ -148,6 +155,7 @@ export function useAIGeneration() {
         style: options.style,
         slideCount: options.slideCount,
         language: options.language,
+        quality: options.quality,
         brandKit: options.brandKit,
         existingSlides: existingSlides.length > 0 ? existingSlides : undefined,
         canvasWidth: width,
@@ -196,6 +204,25 @@ export function useAIGeneration() {
                       ...prev,
                       totalSlides: data.totalSlides,
                       message: 'Starting generation...',
+                    }))
+                    break
+                  }
+
+                  case 'step_start': {
+                    const data = event.data as StepStartEventData
+                    setState((prev) => ({
+                      ...prev,
+                      currentStep: data.step,
+                      message: data.message,
+                    }))
+                    break
+                  }
+
+                  case 'step_complete': {
+                    const data = event.data as StepCompleteEventData
+                    setState((prev) => ({
+                      ...prev,
+                      message: `${data.step} complete`,
                     }))
                     break
                   }
@@ -284,6 +311,7 @@ export function useAIGeneration() {
     setState((prev) => ({
       ...prev,
       isGenerating: false,
+      currentStep: null,
       message: 'Generation cancelled',
     }))
   }, [])

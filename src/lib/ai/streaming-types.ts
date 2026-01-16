@@ -5,6 +5,7 @@
 import type { BrandKit } from '@/types/brand-kit'
 
 import type { SlideData } from './carousel-schema'
+import type { QualityTier } from './pipeline'
 
 // Request types
 export interface CarouselGenerationRequest {
@@ -12,6 +13,7 @@ export interface CarouselGenerationRequest {
   style: 'professional' | 'casual' | 'educational' | 'inspirational'
   slideCount: number
   language: 'de' | 'en'
+  quality: QualityTier
   brandKit?: BrandKit | null
   existingSlides?: ExistingSlideContext[]
   canvasWidth: number
@@ -28,8 +30,12 @@ export interface ExistingSlideContext {
 // SSE Event types
 export type StreamEventType =
   | 'start'
+  | 'step_start'
+  | 'step_complete'
   | 'slide_data'
   | 'slide_complete'
+  | 'validation_error'
+  | 'refinement_start'
   | 'progress'
   | 'error'
   | 'done'
@@ -41,14 +47,31 @@ export interface StreamEvent {
 
 export type StreamEventData =
   | StartEventData
+  | StepStartEventData
+  | StepCompleteEventData
   | SlideDataEventData
   | SlideCompleteEventData
+  | ValidationErrorEventData
+  | RefinementStartEventData
   | ProgressEventData
   | ErrorEventData
   | DoneEventData
 
 export interface StartEventData {
   totalSlides: number
+  quality: QualityTier
+  steps: number
+}
+
+export interface StepStartEventData {
+  step: 'content' | 'design' | 'layout' | 'validation' | 'refinement' | 'generate'
+  message: string
+}
+
+export interface StepCompleteEventData {
+  step: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data?: any
 }
 
 export interface SlideDataEventData {
@@ -59,6 +82,21 @@ export interface SlideDataEventData {
 export interface SlideCompleteEventData {
   slideIndex: number
   totalSlides: number
+}
+
+export interface ValidationErrorEventData {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  errors: any[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  warnings: any[]
+  autoFix: boolean
+  maxAttemptsReached?: boolean
+}
+
+export interface RefinementStartEventData {
+  attempt: number
+  maxAttempts: number
+  errorCount: number
 }
 
 export interface ProgressEventData {
@@ -73,4 +111,6 @@ export interface ErrorEventData {
 
 export interface DoneEventData {
   slidesCreated: number
+  quality: QualityTier
+  validationPassed?: boolean
 }

@@ -1,12 +1,13 @@
 'use client'
 
-import { Sparkles, X } from 'lucide-react'
+import { Sparkles, X, Zap } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import type { AIGenerationOptions } from '@/hooks/use-ai-generation'
 import { useSubscription } from '@/hooks/use-subscription'
 import { useToast } from '@/hooks/use-toast'
+import type { QualityTier } from '@/lib/ai/pipeline'
 import { cn } from '@/lib/utils'
 import type { BrandKit } from '@/types/brand-kit'
 
@@ -41,9 +42,31 @@ const LANGUAGES = [
   { id: 'en', label: 'English' },
 ] as const
 
+const QUALITY_TIERS = [
+  {
+    id: 'basic' as QualityTier,
+    label: 'Basic',
+    credits: 1,
+    desc: 'Schnelle Generierung',
+  },
+  {
+    id: 'standard' as QualityTier,
+    label: 'Standard',
+    credits: 2,
+    desc: 'Multi-Step + Validation',
+  },
+  {
+    id: 'premium' as QualityTier,
+    label: 'Premium',
+    credits: 4,
+    desc: 'Beste Qualität + Auto-Fix',
+  },
+] as const
+
 export function AIPanel({ isOpen, onClose, onGenerate, isGenerating }: AIPanelProps) {
   const [topic, setTopic] = useState('')
   const [style, setStyle] = useState<(typeof STYLES)[number]['id']>('professional')
+  const [quality, setQuality] = useState<QualityTier>('standard')
   const [slideCount, setSlideCount] = useState(5)
   const [language, setLanguage] = useState<'de' | 'en'>('de')
   const [brandKit, setBrandKit] = useState<BrandKit | null>(null)
@@ -90,6 +113,7 @@ export function AIPanel({ isOpen, onClose, onGenerate, isGenerating }: AIPanelPr
       style,
       slideCount,
       language,
+      quality,
       brandKit,
     })
   }
@@ -166,6 +190,36 @@ export function AIPanel({ isOpen, onClose, onGenerate, isGenerating }: AIPanelPr
                     >
                       <p className="font-medium text-gray-900">{s.label}</p>
                       <p className="text-xs text-gray-500">{s.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quality Selection */}
+              <div>
+                <label className="mb-2 block text-sm font-medium text-gray-700">Qualität</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {QUALITY_TIERS.map((q) => (
+                    <button
+                      key={q.id}
+                      onClick={() => setQuality(q.id)}
+                      disabled={isGenerating}
+                      className={cn(
+                        'rounded-lg border p-3 text-center transition-colors',
+                        quality === q.id
+                          ? 'border-purple-500 bg-purple-50'
+                          : 'border-gray-200 hover:border-gray-300',
+                        isGenerating && 'cursor-not-allowed opacity-50'
+                      )}
+                    >
+                      <div className="flex items-center justify-center gap-1">
+                        {q.id === 'premium' && <Zap className="h-3 w-3 text-yellow-500" />}
+                        <p className="font-medium text-gray-900">{q.label}</p>
+                      </div>
+                      <p className="text-xs text-gray-500">{q.desc}</p>
+                      <p className="mt-1 text-xs font-medium text-purple-600">
+                        {q.credits} Credit{q.credits > 1 ? 's' : ''}
+                      </p>
                     </button>
                   ))}
                 </div>
@@ -250,9 +304,12 @@ export function AIPanel({ isOpen, onClose, onGenerate, isGenerating }: AIPanelPr
               {/* Info Box */}
               <div className="rounded-lg bg-purple-50 p-4">
                 <p className="text-sm text-purple-800">
-                  <strong>Streaming Generation:</strong> Die AI erstellt dein Carousel direkt auf
-                  dem Canvas. Du siehst jeden Slide in Echtzeit entstehen und kannst jederzeit
-                  abbrechen.
+                  <strong>Multi-Step Pipeline:</strong>{' '}
+                  {quality === 'basic'
+                    ? 'Schnelle Single-Pass Generierung.'
+                    : quality === 'standard'
+                      ? 'Content → Design → Layout → Validation in 4 Schritten.'
+                      : 'Premium: 5 Schritte mit Auto-Refinement für beste Ergebnisse.'}
                 </p>
               </div>
 
