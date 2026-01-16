@@ -18,28 +18,22 @@ const tiers = [
     id: 'free' as const,
     price: '0€',
     description: 'Perfekt zum Ausprobieren',
-    features: [
-      'Unbegrenzte Carousels',
-      'Alle Basic Templates',
-      'PDF Export',
-      'Watermark auf Exports',
-    ],
+    features: ['3 AI Credits pro Monat', 'Alle Templates', 'PDF Export', 'Watermark auf Exports'],
     cta: 'Kostenlos starten',
     featured: false,
   },
   {
     name: 'Pro',
     id: 'pro' as const,
-    price: '9€',
+    price: '19€',
     period: '/Monat',
-    description: 'Für Content Creator',
+    description: 'Für ambitionierte Creator',
     features: [
-      'Alles aus Free',
-      'Kein Watermark',
-      'Premium Templates',
+      '100 AI Credits pro Monat',
+      'Alle Templates',
+      'PDF Export ohne Watermark',
       'Brand Kits',
-      'AI Content Generation',
-      'Priority Support',
+      'Premium Support',
     ],
     cta: 'Pro werden',
     featured: true,
@@ -47,18 +41,16 @@ const tiers = [
   {
     name: 'BYOK',
     id: 'byok' as const,
-    price: '4€',
+    price: '9€',
     period: '/Monat',
-    description: 'Bring Your Own Key',
+    description: 'Bring your own API Key',
     features: [
-      'Alles aus Free',
-      'Kein Watermark',
-      'Premium Templates',
-      'Brand Kits',
-      'Eigener AI API Key',
-      'Niedrigere Kosten',
+      'Unlimitierte Generierungen',
+      'Eigene OpenAI API Keys',
+      'Alle Pro Features',
+      'Volle Datenkontrolle',
     ],
-    cta: 'Mit eigenem Key starten',
+    cta: 'BYOK starten',
     featured: false,
   },
 ]
@@ -68,11 +60,9 @@ export default function PricingPage() {
     <div className="py-16 sm:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-gray-900">
-            Einfache, transparente Preise
-          </h1>
-          <p className="mt-4 text-lg text-gray-600">
-            Starte kostenlos. Upgrade wenn du mehr brauchst.
+          <h1 className="text-4xl font-bold tracking-tight text-foreground">Simple Preise</h1>
+          <p className="mt-4 text-lg text-muted-foreground">
+            Starte kostenlos, upgrade wenn du wächst
           </p>
         </div>
 
@@ -81,40 +71,56 @@ export default function PricingPage() {
             <div
               key={tier.id}
               className={cn(
-                'rounded-2xl border bg-white p-8 shadow-sm',
-                tier.featured && 'border-brand-500 ring-brand-500 ring-1'
+                'rounded-2xl border p-8',
+                tier.featured
+                  ? 'relative border-brand-500/50 bg-gradient-to-b from-brand-500/10 to-transparent'
+                  : 'border-white/10 bg-white/[0.02]'
               )}
             >
               {tier.featured && (
-                <p className="text-brand-600 mb-4 text-sm font-semibold">Beliebteste Wahl</p>
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full bg-brand-500 px-4 py-1 text-sm font-medium text-white">
+                  Beliebt
+                </div>
               )}
-              <h2 className="text-2xl font-bold text-gray-900">{tier.name}</h2>
-              <p className="mt-2 text-gray-600">{tier.description}</p>
+              <h2 className="text-lg font-semibold text-foreground">{tier.name}</h2>
+              <p className="mt-2 text-sm text-muted-foreground">{tier.description}</p>
 
               <div className="mt-6">
-                <span className="text-4xl font-bold text-gray-900">{tier.price}</span>
-                {tier.period && <span className="text-gray-600">{tier.period}</span>}
+                <span className="text-4xl font-bold text-foreground">{tier.price}</span>
+                {tier.period && <span className="text-muted-foreground">{tier.period}</span>}
               </div>
 
-              <ul className="mt-8 space-y-3">
+              <ul className="mt-8 space-y-4">
                 {tier.features.map((feature) => (
-                  <li key={feature} className="flex items-center gap-3">
-                    <Check className="text-brand-500 h-5 w-5" />
-                    <span className="text-gray-600">{feature}</span>
+                  <li
+                    key={feature}
+                    className="flex items-center gap-3 text-sm text-muted-foreground"
+                  >
+                    <Check className="h-4 w-4 text-brand-400" />
+                    {feature}
                   </li>
                 ))}
               </ul>
 
               <div className="mt-8">
                 {tier.id === 'free' ? (
-                  <Button asChild className="w-full" variant="outline">
+                  <Button
+                    asChild
+                    className="w-full border-white/10 bg-white/5 hover:bg-white/10"
+                    variant="outline"
+                  >
                     <Link href="/editor">{tier.cta}</Link>
                   </Button>
                 ) : (
                   <CheckoutButton
                     plan={tier.id}
                     variant={tier.featured ? 'default' : 'outline'}
-                    className="w-full"
+                    className={cn(
+                      'w-full',
+                      tier.featured
+                        ? 'bg-brand-500 hover:bg-brand-600'
+                        : 'border-white/10 bg-white/5 hover:bg-white/10'
+                    )}
                   >
                     {tier.cta}
                   </CheckoutButton>
@@ -125,7 +131,7 @@ export default function PricingPage() {
         </div>
 
         <div className="mx-auto mt-16 max-w-2xl text-center">
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             Alle Preise verstehen sich inklusive MwSt. Jederzeit kündbar.
           </p>
         </div>

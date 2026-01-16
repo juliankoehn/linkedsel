@@ -118,7 +118,7 @@ export function useExport() {
         // Add watermark if needed
         if (shouldShowWatermark) {
           const watermark = new Konva.Text({
-            text: 'LinkedSel.de',
+            text: 'stacked.ai',
             fontSize: 32,
             fontFamily: 'Inter, sans-serif',
             fill: 'rgba(0, 0, 0, 0.15)',

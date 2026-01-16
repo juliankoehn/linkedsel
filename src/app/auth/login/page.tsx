@@ -40,12 +40,16 @@ function LoginForm() {
   return (
     <>
       <div className="mt-8">
-        {error && <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+        {error && (
+          <div className="mb-4 rounded-md border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
+            {error}
+          </div>
+        )}
 
         <Button
           onClick={handleGoogleLogin}
           disabled={isLoading}
-          className="w-full"
+          className="w-full border-white/10 bg-white/5 hover:bg-white/10"
           variant="outline"
         >
           {isLoading ? (
@@ -74,9 +78,9 @@ function LoginForm() {
         </Button>
       </div>
 
-      <p className="mt-8 text-center text-sm text-gray-600">
+      <p className="mt-8 text-center text-sm text-muted-foreground">
         Mit der Anmeldung akzeptierst du unsere{' '}
-        <Link href="/datenschutz" className="text-brand-600 hover:underline">
+        <Link href="/datenschutz" className="text-brand-400 hover:underline">
           Datenschutzerklärung
         </Link>
       </p>
@@ -87,7 +91,7 @@ function LoginForm() {
 function LoginFormFallback() {
   return (
     <div className="mt-8">
-      <Button disabled className="w-full" variant="outline">
+      <Button disabled className="w-full border-white/10 bg-white/5" variant="outline">
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         Laden...
       </Button>
@@ -97,14 +101,17 @@ function LoginFormFallback() {
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
         <div className="text-center">
-          <Link href="/" className="text-brand-600 text-2xl font-bold">
-            LinkedSel
+          <Link href="/" className="inline-flex items-center space-x-2">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-accent">
+              <span className="text-lg font-bold text-white">S</span>
+            </div>
+            <span className="text-2xl font-bold text-foreground">Stacked</span>
           </Link>
-          <h1 className="mt-6 text-2xl font-bold text-gray-900">Willkommen zurück</h1>
-          <p className="mt-2 text-gray-600">Melde dich an um fortzufahren</p>
+          <h1 className="mt-8 text-2xl font-bold text-foreground">Willkommen zurück</h1>
+          <p className="mt-2 text-muted-foreground">Melde dich an um fortzufahren</p>
         </div>
 
         <Suspense fallback={<LoginFormFallback />}>

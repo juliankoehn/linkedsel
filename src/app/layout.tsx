@@ -5,32 +5,63 @@ import { Providers } from '@/components/providers'
 
 export const metadata: Metadata = {
   title: {
-    default: 'LinkedSel - LinkedIn Carousel Generator',
-    template: '%s | LinkedSel',
+    default: 'Stacked - LinkedIn Carousels mit KI erstellen',
+    template: '%s | Stacked',
   },
   description:
-    'Create stunning LinkedIn carousels in minutes. Upload images or use templates to craft engaging carousel posts that drive engagement.',
-  keywords: ['LinkedIn', 'carousel', 'generator', 'social media', 'content creation', 'marketing'],
-  authors: [{ name: 'LinkedSel' }],
-  creator: 'LinkedSel',
+    'Erstelle virale LinkedIn Carousels in Sekunden mit KI. Der schnellste Weg von der Idee zum fertigen Post. 100% auf LinkedIn optimiert.',
+  keywords: [
+    'LinkedIn Carousel',
+    'KI Carousel Generator',
+    'LinkedIn Content',
+    'Social Media Marketing',
+    'B2B Marketing',
+    'Personal Branding',
+    'Content Creation',
+    'LinkedIn PDF',
+    'Carousel Design',
+  ],
+  authors: [{ name: 'Stacked' }],
+  creator: 'Stacked',
+  metadataBase: new URL('https://stacked.ai'),
   openGraph: {
     type: 'website',
     locale: 'de_DE',
-    url: 'https://linkedsel.com',
-    siteName: 'LinkedSel',
-    title: 'LinkedSel - LinkedIn Carousel Generator',
+    alternateLocale: 'en_US',
+    url: 'https://stacked.ai',
+    siteName: 'Stacked',
+    title: 'Stacked - LinkedIn Carousels mit KI erstellen',
     description:
-      'Create stunning LinkedIn carousels in minutes. Upload images or use templates to craft engaging carousel posts.',
+      'Erstelle virale LinkedIn Carousels in Sekunden mit KI. Der schnellste Weg von der Idee zum fertigen Post.',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Stacked - LinkedIn Carousel Generator',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'LinkedSel - LinkedIn Carousel Generator',
+    title: 'Stacked - LinkedIn Carousels mit KI erstellen',
     description:
-      'Create stunning LinkedIn carousels in minutes. Upload images or use templates to craft engaging carousel posts.',
+      'Erstelle virale LinkedIn Carousels in Sekunden mit KI. Der schnellste Weg von der Idee zum fertigen Post.',
+    images: ['/og-image.png'],
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    google: 'google-site-verification-code',
   },
 }
 
