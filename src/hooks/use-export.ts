@@ -63,7 +63,7 @@ export function useExport() {
         const layer = new Konva.Layer()
         stage.add(layer)
 
-        // Background
+        // Background color
         const background = new Konva.Rect({
           x: 0,
           y: 0,
@@ -72,6 +72,45 @@ export function useExport() {
           fill: slide.backgroundColor,
         })
         layer.add(background)
+
+        // Background image (if present)
+        if (slide.backgroundImage) {
+          const bgImageData = slide.backgroundImage
+          await new Promise<void>((resolve) => {
+            const bgImageObj = new window.Image()
+            bgImageObj.crossOrigin = 'anonymous'
+            bgImageObj.onload = () => {
+              // Add the background image
+              const bgImage = new Konva.Image({
+                x: 0,
+                y: 0,
+                width,
+                height,
+                image: bgImageObj,
+                opacity: bgImageData.opacity ?? 1,
+              })
+              layer.add(bgImage)
+
+              // Add overlay if specified
+              if (bgImageData.overlay) {
+                const overlay = new Konva.Rect({
+                  x: 0,
+                  y: 0,
+                  width,
+                  height,
+                  fill: bgImageData.overlay,
+                })
+                layer.add(overlay)
+              }
+              resolve()
+            }
+            bgImageObj.onerror = () => {
+              console.warn('Failed to load background image:', bgImageData.src)
+              resolve()
+            }
+            bgImageObj.src = bgImageData.src
+          })
+        }
 
         // Render elements
         await renderSlideElements(layer, slide.elements, Konva)
