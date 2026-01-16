@@ -74,6 +74,7 @@ export function AIPanel({ isOpen, onClose, onGenerate, isGenerating }: AIPanelPr
   const [brandKit, setBrandKit] = useState<BrandKit | null>(null)
   const [brandKits, setBrandKits] = useState<BrandKit[]>([])
   const [isLoadingBrandKits, setIsLoadingBrandKits] = useState(false)
+  const [useImages, setUseImages] = useState(false)
 
   const { isPro, isByok, hasSubscription } = useSubscription()
   const { creditsRemaining, isLoading: isLoadingCredits, refetch: refetchCredits } = useCredits()
@@ -131,6 +132,7 @@ export function AIPanel({ isOpen, onClose, onGenerate, isGenerating }: AIPanelPr
       language,
       quality,
       brandKit,
+      useImages: quality !== 'basic' && useImages,
     })
 
     // Refetch credits after generation starts (will be deducted on success)
@@ -328,6 +330,31 @@ export function AIPanel({ isOpen, onClose, onGenerate, isGenerating }: AIPanelPr
                 </div>
               )}
 
+              {/* Image Option */}
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div>
+                  <p className="font-medium text-gray-900">Mit Bildern generieren</p>
+                  <p className="text-xs text-gray-500">
+                    Stock-Bilder von Unsplash als Hintergrund oder Element
+                  </p>
+                </div>
+                <label className="relative inline-flex cursor-pointer items-center">
+                  <input
+                    type="checkbox"
+                    checked={useImages}
+                    onChange={(e) => setUseImages(e.target.checked)}
+                    disabled={isGenerating || quality === 'basic'}
+                    className="peer sr-only"
+                  />
+                  <div className="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-purple-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-300 peer-disabled:cursor-not-allowed peer-disabled:opacity-50" />
+                </label>
+              </div>
+              {quality === 'basic' && (
+                <p className="text-xs text-gray-500 -mt-4">
+                  Bilder sind nur bei Standard und Premium Qualität verfügbar.
+                </p>
+              )}
+
               {/* Info Box */}
               <div className="rounded-lg bg-purple-50 p-4">
                 <p className="text-sm text-purple-800">
@@ -335,8 +362,8 @@ export function AIPanel({ isOpen, onClose, onGenerate, isGenerating }: AIPanelPr
                   {quality === 'basic'
                     ? 'Schnelle Single-Pass Generierung.'
                     : quality === 'standard'
-                      ? 'Content → Design → Layout → Validation in 4 Schritten.'
-                      : 'Premium: 5 Schritte mit Auto-Refinement für beste Ergebnisse.'}
+                      ? `Content → Design${useImages ? ' → Bilder' : ''} → Layout → Validation in ${useImages ? '5' : '4'} Schritten.`
+                      : `Premium: ${useImages ? '6' : '5'} Schritte${useImages ? ' inkl. Bilder' : ''} mit Auto-Refinement für beste Ergebnisse.`}
                 </p>
               </div>
 
