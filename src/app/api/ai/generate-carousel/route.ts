@@ -2,7 +2,9 @@ import type { NextRequest } from 'next/server'
 
 import { GenerationPipeline, type PipelineEvent } from '@/lib/ai/pipeline'
 import type { CarouselGenerationRequest, StreamEvent } from '@/lib/ai/streaming-types'
+import { deductCredits, getCreditsForQuality, hasEnoughCredits } from '@/lib/credits'
 import { decryptApiKey } from '@/lib/encryption'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import type { ApiKey, Subscription } from '@/types/database'
 
@@ -100,6 +102,25 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Check credits (only for Pro users, BYOK users don't use platform credits)
+    const creditsRequired = getCreditsForQuality(quality)
+    const isByok = subscription?.plan === 'byok'
+
+    if (!isByok) {
+      const adminClient = createAdminClient()
+      const hasCredits = await hasEnoughCredits(adminClient, user.id, creditsRequired)
+
+      if (!hasCredits) {
+        return new Response(
+          JSON.stringify({
+            error: `Insufficient credits. This generation requires ${creditsRequired} credit(s).`,
+            creditsRequired,
+          }),
+          { status: 402, headers: { 'Content-Type': 'application/json' } }
+        )
+      }
+    }
+
     // Create SSE stream
     const { stream, send, close } = createSSEStream()
 
@@ -133,7 +154,16 @@ export async function POST(request: NextRequest) {
           abortController.signal
         )
 
-        await pipeline.run()
+        const result = await pipeline.run()
+
+        // Deduct credits on successful generation (only for non-BYOK users)
+        if (!isByok && result.slides.length > 0) {
+          const adminClient = createAdminClient()
+          await deductCredits(adminClient, user.id, creditsRequired, 'generation', {
+            quality,
+            slideCount: result.slides.length,
+          })
+        }
       } catch (error) {
         console.error('AI generation error:', error)
         if (!abortController.signal.aborted) {

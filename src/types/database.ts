@@ -196,12 +196,105 @@ export interface Database {
           },
         ]
       }
+      user_credits: {
+        Row: {
+          id: string
+          user_id: string
+          credits_remaining: number
+          credits_used_total: number
+          last_refill_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          credits_remaining?: number
+          credits_used_total?: number
+          last_refill_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          credits_remaining?: number
+          credits_used_total?: number
+          last_refill_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'user_credits_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: true
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      credit_transactions: {
+        Row: {
+          id: string
+          user_id: string
+          amount: number
+          type: string
+          metadata: Json
+          balance_after: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          amount: number
+          type: string
+          metadata?: Json
+          balance_after: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          amount?: number
+          type?: string
+          metadata?: Json
+          balance_after?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'credit_transactions_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      deduct_credits: {
+        Args: {
+          p_user_id: string
+          p_amount: number
+          p_type: string
+          p_metadata?: Json
+        }
+        Returns: boolean
+      }
+      add_credits: {
+        Args: {
+          p_user_id: string
+          p_amount: number
+          p_type: string
+          p_metadata?: Json
+        }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
@@ -226,3 +319,5 @@ export type Project = Tables<'projects'>
 export type BrandKit = Tables<'brand_kits'>
 export type Template = Tables<'templates'>
 export type ApiKey = Tables<'api_keys'>
+export type UserCredits = Tables<'user_credits'>
+export type CreditTransaction = Tables<'credit_transactions'>

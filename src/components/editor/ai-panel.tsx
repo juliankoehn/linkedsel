@@ -1,10 +1,12 @@
 'use client'
 
-import { Sparkles, X, Zap } from 'lucide-react'
+import { Coins, Sparkles, X, Zap } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
+import { CreditDisplay } from '@/components/credits/credit-display'
 import { Button } from '@/components/ui/button'
 import type { AIGenerationOptions } from '@/hooks/use-ai-generation'
+import { useCredits } from '@/hooks/use-credits'
 import { useSubscription } from '@/hooks/use-subscription'
 import { useToast } from '@/hooks/use-toast'
 import type { QualityTier } from '@/lib/ai/pipeline'
@@ -74,9 +76,14 @@ export function AIPanel({ isOpen, onClose, onGenerate, isGenerating }: AIPanelPr
   const [isLoadingBrandKits, setIsLoadingBrandKits] = useState(false)
 
   const { isPro, isByok, hasSubscription } = useSubscription()
+  const { creditsRemaining, isLoading: isLoadingCredits, refetch: refetchCredits } = useCredits()
   const { toast } = useToast()
 
   const canUseAI = isPro || isByok
+  const selectedQualityTier = QUALITY_TIERS.find((q) => q.id === quality)
+  const creditsRequired = selectedQualityTier?.credits ?? 1
+  // BYOK users don't use platform credits
+  const hasEnoughCredits = isByok || creditsRemaining >= creditsRequired
 
   // Load brand kits when panel opens
   useEffect(() => {
@@ -102,9 +109,18 @@ export function AIPanel({ isOpen, onClose, onGenerate, isGenerating }: AIPanelPr
     }
   }, [isOpen, canUseAI, brandKit])
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!topic.trim()) {
       toast({ title: 'Bitte gib ein Thema ein', variant: 'destructive' })
+      return
+    }
+
+    if (!hasEnoughCredits && !isByok) {
+      toast({
+        title: 'Nicht genügend Credits',
+        description: `Diese Generierung benötigt ${creditsRequired} Credit(s). Du hast ${creditsRemaining}.`,
+        variant: 'destructive',
+      })
       return
     }
 
@@ -116,6 +132,11 @@ export function AIPanel({ isOpen, onClose, onGenerate, isGenerating }: AIPanelPr
       quality,
       brandKit,
     })
+
+    // Refetch credits after generation starts (will be deducted on success)
+    setTimeout(() => {
+      refetchCredits()
+    }, 5000)
   }
 
   if (!isOpen) return null
@@ -129,9 +150,15 @@ export function AIPanel({ isOpen, onClose, onGenerate, isGenerating }: AIPanelPr
             <Sparkles className="h-5 w-5 text-purple-600" />
             <h2 className="text-lg font-semibold">AI Carousel Generator</h2>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} disabled={isGenerating}>
-            <X className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-3">
+            {/* Show credits for Pro users, not for BYOK */}
+            {canUseAI && !isByok && !isLoadingCredits && (
+              <CreditDisplay credits={creditsRemaining} variant="compact" />
+            )}
+            <Button variant="ghost" size="icon" onClick={onClose} disabled={isGenerating}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         <div className="p-6">
@@ -313,14 +340,32 @@ export function AIPanel({ isOpen, onClose, onGenerate, isGenerating }: AIPanelPr
                 </p>
               </div>
 
+              {/* Credits Warning */}
+              {!hasEnoughCredits && !isByok && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                  <div className="flex items-center gap-2 text-amber-800">
+                    <Coins className="h-4 w-4" />
+                    <p className="text-sm font-medium">Nicht genügend Credits</p>
+                  </div>
+                  <p className="mt-1 text-xs text-amber-700">
+                    Du benötigst {creditsRequired} Credit(s) für diese Generierung, hast aber nur{' '}
+                    {creditsRemaining}. Wähle eine niedrigere Qualitätsstufe oder kaufe mehr
+                    Credits.
+                  </p>
+                </div>
+              )}
+
               {/* Generate Button */}
               <Button
                 onClick={handleGenerate}
-                disabled={isGenerating || !topic.trim()}
+                disabled={isGenerating || !topic.trim() || (!hasEnoughCredits && !isByok)}
                 className="w-full bg-purple-600 hover:bg-purple-700"
               >
                 <Sparkles className="mr-2 h-4 w-4" />
                 Carousel generieren
+                {!isByok && (
+                  <span className="ml-2 text-xs opacity-75">({creditsRequired} Credits)</span>
+                )}
               </Button>
             </div>
           )}
