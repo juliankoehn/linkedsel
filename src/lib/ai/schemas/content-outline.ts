@@ -33,6 +33,7 @@ export const ContentOutlineSchema = z.object({
 export type ContentOutline = z.infer<typeof ContentOutlineSchema>
 
 // JSON Schema for OpenAI Structured Output
+// Note: strict mode requires ALL properties in required array, optional fields use type: ['string', 'null']
 export const contentOutlineJsonSchema = {
   name: 'content_outline',
   strict: true,
@@ -58,36 +59,43 @@ export const contentOutlineJsonSchema = {
               description: 'Main headline for the slide',
             },
             subheadline: {
-              type: 'string',
+              type: ['string', 'null'],
               description: 'Optional subheadline',
             },
             body: {
-              type: 'string',
+              type: ['string', 'null'],
               description: 'Body text for content slides',
             },
             bullets: {
-              type: 'array',
+              type: ['array', 'null'],
               items: { type: 'string' },
               description: 'Bullet points for list slides',
             },
             quote: {
-              type: 'string',
+              type: ['string', 'null'],
               description: 'Quote text for quote slides',
             },
             attribution: {
-              type: 'string',
+              type: ['string', 'null'],
               description: 'Quote attribution',
             },
             cta: {
-              type: 'string',
+              type: ['string', 'null'],
               description: 'Call-to-action text',
             },
           },
-          required: ['type', 'headline'],
+          required: [
+            'type',
+            'headline',
+            'subheadline',
+            'body',
+            'bullets',
+            'quote',
+            'attribution',
+            'cta',
+          ],
           additionalProperties: false,
         },
-        minItems: 1,
-        maxItems: 10,
       },
     },
     required: ['title', 'slides'],

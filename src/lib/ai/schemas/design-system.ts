@@ -106,9 +106,9 @@ export const designSystemJsonSchema = {
             properties: {
               size: { type: 'number', description: 'Font size in pixels' },
               weight: { type: 'string', enum: ['normal', 'medium', 'semibold', 'bold'] },
-              lineHeight: { type: 'number', description: 'Line height multiplier' },
+              lineHeight: { type: ['number', 'null'], description: 'Line height multiplier' },
             },
-            required: ['size', 'weight'],
+            required: ['size', 'weight', 'lineHeight'],
             additionalProperties: false,
           },
           subheadline: {
@@ -116,9 +116,9 @@ export const designSystemJsonSchema = {
             properties: {
               size: { type: 'number' },
               weight: { type: 'string', enum: ['normal', 'medium', 'semibold', 'bold'] },
-              lineHeight: { type: 'number' },
+              lineHeight: { type: ['number', 'null'] },
             },
-            required: ['size', 'weight'],
+            required: ['size', 'weight', 'lineHeight'],
             additionalProperties: false,
           },
           body: {
@@ -126,9 +126,9 @@ export const designSystemJsonSchema = {
             properties: {
               size: { type: 'number' },
               weight: { type: 'string', enum: ['normal', 'medium', 'semibold', 'bold'] },
-              lineHeight: { type: 'number' },
+              lineHeight: { type: ['number', 'null'] },
             },
-            required: ['size', 'weight'],
+            required: ['size', 'weight', 'lineHeight'],
             additionalProperties: false,
           },
           caption: {
@@ -136,9 +136,9 @@ export const designSystemJsonSchema = {
             properties: {
               size: { type: 'number' },
               weight: { type: 'string', enum: ['normal', 'medium', 'semibold', 'bold'] },
-              lineHeight: { type: 'number' },
+              lineHeight: { type: ['number', 'null'] },
             },
-            required: ['size', 'weight'],
+            required: ['size', 'weight', 'lineHeight'],
             additionalProperties: false,
           },
         },

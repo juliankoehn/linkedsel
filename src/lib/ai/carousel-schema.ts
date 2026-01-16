@@ -66,6 +66,7 @@ export type SlideData = z.infer<typeof SlideSchema>
 export type CarouselData = z.infer<typeof CarouselSchema>
 
 // JSON Schema for OpenAI (converted from Zod)
+// Note: strict mode requires ALL properties in required array, optional fields use type: ['string', 'null'] etc.
 export const carouselJsonSchema = {
   name: 'carousel',
   strict: true,
@@ -90,26 +91,41 @@ export const carouselJsonSchema = {
                     type: 'string',
                     enum: ['text', 'rectangle', 'circle'],
                   },
-                  // Text properties
-                  text: { type: 'string' },
+                  // Text properties (null when not text type)
+                  text: { type: ['string', 'null'] },
                   x: { type: 'number' },
                   y: { type: 'number' },
-                  width: { type: 'number' },
-                  fontSize: { type: 'number' },
+                  width: { type: ['number', 'null'] },
+                  fontSize: { type: ['number', 'null'] },
                   fontWeight: {
-                    type: 'string',
-                    enum: ['normal', 'bold', '500', '600', '700'],
+                    type: ['string', 'null'],
+                    enum: ['normal', 'bold', '500', '600', '700', null],
                   },
-                  color: { type: 'string' },
-                  textAlign: { type: 'string', enum: ['left', 'center', 'right'] },
-                  // Shape properties
-                  height: { type: 'number' },
-                  fill: { type: 'string' },
-                  cornerRadius: { type: 'number' },
-                  radius: { type: 'number' },
-                  opacity: { type: 'number' },
+                  color: { type: ['string', 'null'] },
+                  textAlign: { type: ['string', 'null'], enum: ['left', 'center', 'right', null] },
+                  // Shape properties (null when not shape type)
+                  height: { type: ['number', 'null'] },
+                  fill: { type: ['string', 'null'] },
+                  cornerRadius: { type: ['number', 'null'] },
+                  radius: { type: ['number', 'null'] },
+                  opacity: { type: ['number', 'null'] },
                 },
-                required: ['type', 'x', 'y'],
+                required: [
+                  'type',
+                  'x',
+                  'y',
+                  'text',
+                  'width',
+                  'fontSize',
+                  'fontWeight',
+                  'color',
+                  'textAlign',
+                  'height',
+                  'fill',
+                  'cornerRadius',
+                  'radius',
+                  'opacity',
+                ],
                 additionalProperties: false,
               },
             },
