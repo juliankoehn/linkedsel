@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 
+import { addCredits } from '@/lib/credits'
 import {
   getPlanFromVariant,
   normalizeSubscriptionStatus,
@@ -7,6 +8,16 @@ import {
   verifyWebhookSignature,
 } from '@/lib/lemonsqueezy'
 import { createAdminClient } from '@/lib/supabase/admin'
+
+/**
+ * Credits per plan per month
+ * Pro users get monthly credits, BYOK users use their own API keys
+ */
+const CREDITS_PER_PLAN: Record<string, number> = {
+  pro: 50, // 50 credits/month = ~12 premium or 25 standard or 50 basic generations
+  byok: 0, // BYOK users don't need credits
+  free: 0,
+}
 
 interface LemonSqueezyWebhookEvent {
   meta: {
@@ -42,6 +53,35 @@ interface LemonSqueezyWebhookEvent {
       updated_at: string
       test_mode: boolean
     }
+  }
+}
+
+/**
+ * Refill credits for a user based on their plan
+ */
+async function refillCredits(
+  supabase: ReturnType<typeof createAdminClient>,
+  userId: string,
+  plan: string,
+  reason: 'subscription_created' | 'subscription_renewed' | 'subscription_resumed'
+) {
+  const creditsToAdd = CREDITS_PER_PLAN[plan] ?? 0
+
+  if (creditsToAdd === 0) {
+    console.log(`No credits to add for plan: ${plan}`)
+    return
+  }
+
+  try {
+    const newBalance = await addCredits(supabase, userId, creditsToAdd, 'subscription_refill', {
+      plan,
+      reason,
+      credits_added: creditsToAdd,
+    })
+    console.log(`Refilled ${creditsToAdd} credits for user ${userId}, new balance: ${newBalance}`)
+  } catch (error) {
+    console.error(`Failed to refill credits for user ${userId}:`, error)
+    // Don't throw - credit refill failure shouldn't block subscription updates
   }
 }
 
@@ -149,6 +189,11 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        // Refill credits for new subscription
+        if (status === 'active') {
+          await refillCredits(supabase, userId, plan, 'subscription_created')
+        }
+
         break
       }
 
@@ -194,6 +239,7 @@ export async function POST(request: NextRequest) {
       }
 
       case 'subscription_resumed': {
+        const plan = getPlanFromVariant(String(attributes.variant_id))
         const status = normalizeSubscriptionStatus(attributes.status)
 
         const { error } = await updateSubscription(
@@ -208,6 +254,11 @@ export async function POST(request: NextRequest) {
         if (error) {
           console.error('Failed to resume subscription', error)
           return NextResponse.json({ error: 'Failed to resume subscription' }, { status: 500 })
+        }
+
+        // Refill credits when subscription is resumed
+        if (status === 'active') {
+          await refillCredits(supabase, userId, plan, 'subscription_resumed')
         }
 
         break
@@ -230,7 +281,16 @@ export async function POST(request: NextRequest) {
         break
       }
 
-      case 'subscription_payment_success':
+      case 'subscription_payment_success': {
+        // Monthly renewal - refill credits
+        const plan = getPlanFromVariant(String(attributes.variant_id))
+        console.log(`Payment success for subscription ${subscriptionId}, plan: ${plan}`)
+
+        // Refill credits for successful payment (monthly renewal)
+        await refillCredits(supabase, userId, plan, 'subscription_renewed')
+        break
+      }
+
       case 'subscription_payment_failed':
       case 'subscription_payment_recovered': {
         // Log payment events but don't need special handling
