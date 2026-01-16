@@ -702,7 +702,15 @@ export function KonvaCanvas() {
   // Space + drag panning
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space' && !e.repeat && !editingTextId) {
+      // Don't capture space if focus is on an input/textarea/select (e.g., AI panel)
+      const activeEl = document.activeElement
+      const isInputFocused =
+        activeEl instanceof HTMLInputElement ||
+        activeEl instanceof HTMLTextAreaElement ||
+        activeEl instanceof HTMLSelectElement ||
+        activeEl?.getAttribute('contenteditable') === 'true'
+
+      if (e.code === 'Space' && !e.repeat && !editingTextId && !isInputFocused) {
         e.preventDefault()
         setIsSpacePressed(true)
       }
