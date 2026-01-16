@@ -15,18 +15,40 @@ export interface LayoutPromptContext {
   canvasHeight: number
 }
 
-const layoutExamples = `
-BEISPIEL 1 - Hook Slide (zentriert):
+/**
+ * Generate dynamic layout examples based on canvas size
+ */
+function generateLayoutExamples(canvasWidth: number, canvasHeight: number): string {
+  const padding = Math.round(canvasWidth * 0.06) // 6% padding
+  const contentWidth = canvasWidth - padding * 2
+  const centerX = padding // For full-width centered text, x starts at padding
+
+  // Font sizes scaled to canvas
+  const headlineFontSize = Math.round(canvasWidth * 0.05) // 5% of width
+  const subheadlineFontSize = Math.round(canvasWidth * 0.032) // 3.2% of width
+  const bodyFontSize = Math.round(canvasWidth * 0.028) // 2.8% of width
+  const smallFontSize = Math.round(canvasWidth * 0.022) // 2.2% of width
+
+  // Vertical positions
+  const hookHeadlineY = Math.round(canvasHeight * 0.35) // 35% from top
+  const hookSublineY = Math.round(canvasHeight * 0.48) // 48% from top
+  const topHeadlineY = Math.round(canvasHeight * 0.08) // 8% from top
+  const listStartY = Math.round(canvasHeight * 0.22) // 22% from top
+  const listItemGap = Math.round(canvasHeight * 0.08) // 8% gap between items
+
+  return `
+BEISPIEL 1 - Hook Slide (vertikal zentriert):
+Canvas: ${canvasWidth}x${canvasHeight}
 {
   "backgroundColor": "#1E40AF",
   "elements": [
     {
       "type": "text",
       "text": "Arbeitest du hart oder smart?",
-      "x": 60,
-      "y": 280,
-      "width": 680,
-      "fontSize": 56,
+      "x": ${centerX},
+      "y": ${hookHeadlineY},
+      "width": ${contentWidth},
+      "fontSize": ${headlineFontSize},
       "fontWeight": "bold",
       "color": "#FFFFFF",
       "textAlign": "center"
@@ -34,55 +56,45 @@ BEISPIEL 1 - Hook Slide (zentriert):
     {
       "type": "text",
       "text": "5 Zeitmanagement-Strategien, die alles verändern",
-      "x": 60,
-      "y": 370,
-      "width": 680,
-      "fontSize": 28,
+      "x": ${centerX},
+      "y": ${hookSublineY},
+      "width": ${contentWidth},
+      "fontSize": ${subheadlineFontSize},
       "fontWeight": "normal",
       "color": "#BFDBFE",
       "textAlign": "center"
     },
     {
       "type": "circle",
-      "x": 680,
-      "y": 100,
-      "radius": 60,
+      "x": ${Math.round(canvasWidth * 0.85)},
+      "y": ${Math.round(canvasHeight * 0.12)},
+      "radius": ${Math.round(canvasWidth * 0.08)},
       "fill": "#3B82F6",
       "opacity": 0.3
-    },
-    {
-      "type": "rectangle",
-      "x": 40,
-      "y": 700,
-      "width": 200,
-      "height": 8,
-      "fill": "#F59E0B",
-      "cornerRadius": 4,
-      "opacity": 1
     }
   ]
 }
 
-BEISPIEL 2 - List Slide (mit Bullets):
+BEISPIEL 2 - List Slide (Headline oben, Liste darunter):
 {
   "backgroundColor": "#FFFFFF",
   "elements": [
     {
       "type": "text",
       "text": "Die 4 Säulen der EQ",
-      "x": 60,
-      "y": 80,
-      "width": 680,
-      "fontSize": 48,
+      "x": ${padding},
+      "y": ${topHeadlineY},
+      "width": ${contentWidth},
+      "fontSize": ${headlineFontSize},
       "fontWeight": "bold",
       "color": "#1E293B",
       "textAlign": "left"
     },
     {
       "type": "rectangle",
-      "x": 60,
-      "y": 160,
-      "width": 80,
+      "x": ${padding},
+      "y": ${Math.round(canvasHeight * 0.16)},
+      "width": ${Math.round(canvasWidth * 0.1)},
       "height": 4,
       "fill": "#1E40AF",
       "cornerRadius": 2,
@@ -91,10 +103,10 @@ BEISPIEL 2 - List Slide (mit Bullets):
     {
       "type": "text",
       "text": "• Selbstwahrnehmung - Eigene Emotionen erkennen",
-      "x": 60,
-      "y": 220,
-      "width": 680,
-      "fontSize": 26,
+      "x": ${padding},
+      "y": ${listStartY},
+      "width": ${contentWidth},
+      "fontSize": ${bodyFontSize},
       "fontWeight": "normal",
       "color": "#334155",
       "textAlign": "left"
@@ -102,10 +114,10 @@ BEISPIEL 2 - List Slide (mit Bullets):
     {
       "type": "text",
       "text": "• Selbstregulation - Impulse kontrollieren",
-      "x": 60,
-      "y": 300,
-      "width": 680,
-      "fontSize": 26,
+      "x": ${padding},
+      "y": ${listStartY + listItemGap},
+      "width": ${contentWidth},
+      "fontSize": ${bodyFontSize},
       "fontWeight": "normal",
       "color": "#334155",
       "textAlign": "left"
@@ -113,10 +125,10 @@ BEISPIEL 2 - List Slide (mit Bullets):
     {
       "type": "text",
       "text": "• Empathie - Andere verstehen",
-      "x": 60,
-      "y": 380,
-      "width": 680,
-      "fontSize": 26,
+      "x": ${padding},
+      "y": ${listStartY + listItemGap * 2},
+      "width": ${contentWidth},
+      "fontSize": ${bodyFontSize},
       "fontWeight": "normal",
       "color": "#334155",
       "textAlign": "left"
@@ -124,10 +136,10 @@ BEISPIEL 2 - List Slide (mit Bullets):
     {
       "type": "text",
       "text": "• Soziale Kompetenz - Beziehungen pflegen",
-      "x": 60,
-      "y": 460,
-      "width": 680,
-      "fontSize": 26,
+      "x": ${padding},
+      "y": ${listStartY + listItemGap * 3},
+      "width": ${contentWidth},
+      "fontSize": ${bodyFontSize},
       "fontWeight": "normal",
       "color": "#334155",
       "textAlign": "left"
@@ -135,17 +147,17 @@ BEISPIEL 2 - List Slide (mit Bullets):
   ]
 }
 
-BEISPIEL 3 - CTA Slide:
+BEISPIEL 3 - CTA Slide (zentriert mit Button):
 {
   "backgroundColor": "#0F172A",
   "elements": [
     {
       "type": "text",
       "text": "Bereit für mehr Produktivität?",
-      "x": 60,
-      "y": 200,
-      "width": 680,
-      "fontSize": 52,
+      "x": ${centerX},
+      "y": ${Math.round(canvasHeight * 0.28)},
+      "width": ${contentWidth},
+      "fontSize": ${headlineFontSize},
       "fontWeight": "bold",
       "color": "#F8FAFC",
       "textAlign": "center"
@@ -153,32 +165,32 @@ BEISPIEL 3 - CTA Slide:
     {
       "type": "text",
       "text": "Starte heute mit nur einer dieser Strategien.",
-      "x": 60,
-      "y": 300,
-      "width": 680,
-      "fontSize": 26,
+      "x": ${centerX},
+      "y": ${Math.round(canvasHeight * 0.4)},
+      "width": ${contentWidth},
+      "fontSize": ${bodyFontSize},
       "fontWeight": "normal",
       "color": "#94A3B8",
       "textAlign": "center"
     },
     {
       "type": "rectangle",
-      "x": 220,
-      "y": 420,
-      "width": 360,
-      "height": 60,
+      "x": ${Math.round(canvasWidth * 0.25)},
+      "y": ${Math.round(canvasHeight * 0.55)},
+      "width": ${Math.round(canvasWidth * 0.5)},
+      "height": ${Math.round(canvasHeight * 0.06)},
       "fill": "#7C3AED",
-      "cornerRadius": 30,
+      "cornerRadius": ${Math.round(canvasHeight * 0.03)},
       "opacity": 1
     },
     {
       "type": "text",
       "text": "Folge für mehr Tipps",
-      "x": 220,
-      "y": 435,
-      "width": 360,
-      "fontSize": 22,
-      "fontWeight": "semibold",
+      "x": ${Math.round(canvasWidth * 0.25)},
+      "y": ${Math.round(canvasHeight * 0.565)},
+      "width": ${Math.round(canvasWidth * 0.5)},
+      "fontSize": ${smallFontSize},
+      "fontWeight": "600",
       "color": "#FFFFFF",
       "textAlign": "center"
     }
@@ -192,10 +204,10 @@ BEISPIEL 4 - Quote Slide:
     {
       "type": "text",
       "text": "❝",
-      "x": 60,
-      "y": 120,
-      "width": 100,
-      "fontSize": 120,
+      "x": ${padding},
+      "y": ${Math.round(canvasHeight * 0.12)},
+      "width": ${Math.round(canvasWidth * 0.15)},
+      "fontSize": ${Math.round(canvasWidth * 0.12)},
       "fontWeight": "bold",
       "color": "#1E40AF",
       "textAlign": "left"
@@ -203,27 +215,28 @@ BEISPIEL 4 - Quote Slide:
     {
       "type": "text",
       "text": "90% der Top-Performer haben eine überdurchschnittliche emotionale Intelligenz.",
-      "x": 60,
-      "y": 260,
-      "width": 680,
-      "fontSize": 36,
-      "fontWeight": "medium",
+      "x": ${padding},
+      "y": ${Math.round(canvasHeight * 0.3)},
+      "width": ${contentWidth},
+      "fontSize": ${Math.round(canvasWidth * 0.038)},
+      "fontWeight": "500",
       "color": "#1E293B",
       "textAlign": "left"
     },
     {
       "type": "text",
       "text": "— TalentSmart Studie",
-      "x": 60,
-      "y": 420,
-      "width": 680,
-      "fontSize": 22,
+      "x": ${padding},
+      "y": ${Math.round(canvasHeight * 0.52)},
+      "width": ${contentWidth},
+      "fontSize": ${smallFontSize},
       "fontWeight": "normal",
       "color": "#64748B",
       "textAlign": "left"
     }
   ]
 }`
+}
 
 export function buildLayoutPrompt(context: LayoutPromptContext): {
   system: string
@@ -232,10 +245,24 @@ export function buildLayoutPrompt(context: LayoutPromptContext): {
   const { slideContent, slideIndex, totalSlides, designSystem, canvasWidth, canvasHeight } = context
   const { colors, typography, spacing, decorative } = designSystem
 
+  // Calculate recommended sizes based on canvas
+  const padding = Math.round(canvasWidth * 0.06)
+  const contentWidth = canvasWidth - padding * 2
+  const recommendedHeadline = Math.round(canvasWidth * 0.05)
+  const recommendedBody = Math.round(canvasWidth * 0.028)
+
+  const layoutExamples = generateLayoutExamples(canvasWidth, canvasHeight)
+
   const system = `Du bist ein Layout-Designer für Social Media Carousels.
 Deine Aufgabe ist es, präzise Positionen für alle Elemente eines Slides zu berechnen.
 
 CANVAS: ${canvasWidth}x${canvasHeight}px
+
+BERECHNETE WERTE FÜR DIESEN CANVAS:
+- Padding: ${padding}px (6% von Breite)
+- Content-Breite: ${contentWidth}px (Canvas minus Padding)
+- Empfohlene Headline: ${recommendedHeadline}px (5% von Breite)
+- Empfohlene Body-Schrift: ${recommendedBody}px (2.8% von Breite)
 
 DESIGN SYSTEM:
 - Farben: Primary ${colors.primary}, Secondary ${colors.secondary}, Background ${colors.background}, Text ${colors.text}
@@ -244,22 +271,23 @@ DESIGN SYSTEM:
 - Decorative: ${decorative.useShapes ? `Shapes (${decorative.shapeStyle}, Opacity ${decorative.opacity})` : 'Keine Shapes'}
 
 LAYOUT-REGELN:
-1. Text MUSS innerhalb des Canvas bleiben (x + width <= ${canvasWidth - spacing.paddingHorizontal})
-2. Verwende das Spacing aus dem Design System
-3. Zentrierte Headlines bei hook/cta Slides (textAlign: "center", x so dass Text zentriert ist)
-4. Links-ausgerichtete Headlines bei content/list Slides
-5. Background-Farbe sollte zwischen background und backgroundAlt variieren
+1. Text MUSS innerhalb des Canvas bleiben: x >= ${padding}, x + width <= ${canvasWidth - padding}
+2. Vertikale Grenzen beachten: y >= ${padding}, Elemente nicht unter ${canvasHeight - padding}
+3. Zentrierte Headlines bei hook/cta Slides: x = ${padding}, width = ${contentWidth}, textAlign: "center"
+4. Links-ausgerichtete Headlines bei content/list Slides: x = ${padding}, textAlign: "left"
+5. Font-Größen skaliert zur Canvas-Größe verwenden (siehe Beispiele)
 6. Bei Listen: Jeden Bullet als separates Text-Element mit • Prefix
-7. Dekorative Shapes: Dezent platzieren (Ecken, unter/über Text)
+7. Vertikaler Abstand zwischen Elementen: mindestens ${Math.round(canvasHeight * 0.04)}px
 
-ELEMENT-TYPEN:
-- "text": Für alle Texte. Benötigt: text, x, y, width, fontSize, fontWeight, color, textAlign
-- "rectangle": Für Rechtecke. Benötigt: x, y, width, height, fill, cornerRadius, opacity
-- "circle": Für Kreise. Benötigt: x (Zentrum), y (Zentrum), radius, fill, opacity
+ELEMENT-TYPEN (alle Felder müssen gesetzt sein, nicht benötigte als null):
+- "text": text, x, y, width, fontSize, fontWeight, color, textAlign (+ null für: height, fill, cornerRadius, radius, opacity)
+- "rectangle": x, y, width, height, fill, cornerRadius, opacity (+ null für: text, fontSize, fontWeight, color, textAlign, radius)
+- "circle": x (Zentrum), y (Zentrum), radius, fill, opacity (+ null für: text, width, height, fontSize, fontWeight, color, textAlign, cornerRadius)
 
 WICHTIG:
-- Prüfe dass alle Elemente im Canvas sind
-- Keine Überlappungen von Text-Elementen
+- Alle Positionen sind ABSOLUTE Pixel-Werte
+- Hook/CTA Slides: Text vertikal zentrieren (y ca. ${Math.round(canvasHeight * 0.35)} für Headline)
+- List Slides: Headline oben (y ca. ${Math.round(canvasHeight * 0.08)}), dann Liste ab ${Math.round(canvasHeight * 0.22)}
 - Kontrastreiche Farben für Text auf Background
 
 ${layoutExamples}`
